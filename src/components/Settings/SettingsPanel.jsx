@@ -60,7 +60,7 @@ export default function SettingsPanel({ isOpen, onClose, onCitySelect }) {
 
   const handleAddCity = (e) => {
     e.preventDefault();
-    if (newCity.trim() && savedCities.length < 3 && !savedCities.includes(newCity.trim())) {
+    if (newCity.trim() && savedCities.length < 10 && !savedCities.includes(newCity.trim())) {
       const updatedCities = [...savedCities, newCity.trim()];
       setSavedCities(updatedCities);
       localStorage.setItem('weather-saved-cities', JSON.stringify(updatedCities));
@@ -173,17 +173,17 @@ export default function SettingsPanel({ isOpen, onClose, onCitySelect }) {
                   onChange={(e) => setNewCity(e.target.value)}
                   placeholder={t('addCityPlaceholder')}
                   className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm"
-                  disabled={savedCities.length >= 3}
+                  disabled={savedCities.length >= 10}
                 />
                 <button
                   type="submit"
-                  disabled={!newCity.trim() || savedCities.length >= 3 || savedCities.includes(newCity.trim())}
+                  disabled={!newCity.trim() || savedCities.length >= 10 || savedCities.includes(newCity.trim())}
                   className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              {savedCities.length >= 3 && (
+              {savedCities.length >= 10 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {t('maxCitiesHint')}
                 </p>
