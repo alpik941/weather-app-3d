@@ -1,4 +1,4 @@
-# MeylisBrothers Weather App — Agent Guide
+# Alpik941 Weather App — Agent Guide
 
 Short, project-specific rules to help AI agents be productive in this repo.
 

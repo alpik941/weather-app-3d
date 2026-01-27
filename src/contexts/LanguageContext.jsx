@@ -4,16 +4,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const translations = {
   // App Title
   appTitle: {
-    en: 'MeylisBrothers',
-    es: 'MeylisBrothers',
-    fr: 'MeylisBrothers',
-    de: 'MeylisBrothers',
-    it: 'MeylisBrothers',
-    pt: 'MeylisBrothers',
-    ru: 'MeylisBrothers',
-    zh: 'MeylisBrothers',
-    ja: 'MeylisBrothers',
-    ko: 'MeylisBrothers',
+    en: 'Alpik941',
+    es: 'Alpik941',
+    fr: 'Alpik941',
+    de: 'Alpik941',
+    it: 'Alpik941',
+    pt: 'Alpik941',
+    ru: 'Alpik941',
+    zh: 'Alpik941',
+    ja: 'Alpik941',
+    ko: 'Alpik941',
   },
   // UI Common
   subtitle: {
@@ -623,13 +623,13 @@ const translations = {
     en: 'Saved Cities', es: 'Ciudades Guardadas', fr: 'Villes Enregistrées', de: 'Gespeicherte Städte', it: 'Città Salvate', pt: 'Cidades Salvas', ru: 'Сохраненные города', zh: '已保存的城市', ja: '保存した都市', ko: '저장된 도시'
   },
   addCityPlaceholder: {
-    en: 'Add city (max 3)', es: 'Agregar ciudad (máx. 3)', fr: 'Ajouter une ville (max 3)', de: 'Stadt hinzufügen (max. 3)', it: 'Aggiungi città (max 3)', pt: 'Adicionar cidade (máx. 3)', ru: 'Добавить город (макс. 3)', zh: '添加城市（最多3个）', ja: '都市を追加（最大3件）', ko: '도시 추가 (최대 3개)'
+    en: 'Add city (max 10)', es: 'Agregar ciudad (máx. 10)', fr: 'Ajouter une ville (max 10)', de: 'Stadt hinzufügen (max. 10)', it: 'Aggiungi città (max 10)', pt: 'Adicionar cidade (máx. 10)', ru: 'Добавить город (макс. 10)', zh: '添加城市（最多10个）', ja: '都市を追加（最大10件）', ko: '도시 추가 (최대 10개)'
   },
   maxCitiesHint: {
-    en: 'Maximum 3 cities allowed. Remove one to add another.', es: 'Máximo 3 ciudades. Elimina una para añadir otra.', fr: 'Maximum 3 villes. Supprimez-en une pour en ajouter une autre.', de: 'Maximal 3 Städte. Entfernen Sie eine, um eine weitere hinzuzufügen.', it: 'Massimo 3 città. Rimuovine una per aggiungerne un’altra.', pt: 'Máximo de 3 cidades. Remova uma para adicionar outra.', ru: 'Максимум 3 города. Удалите один, чтобы добавить другой.', zh: '最多允许3个城市。要添加新城市请先删除一个。', ja: '最大3都市まで。追加するには一つ削除してください。', ko: '최대 3개 도시. 다른 도시를 추가하려면 하나를 제거하세요.'
+    en: 'Maximum 10 cities allowed. Remove one to add another.', es: 'Máximo 10 ciudades. Elimina una para añadir otra.', fr: 'Maximum 10 villes. Supprimez-en une pour en ajouter une autre.', de: 'Maximal 10 Städte. Entfernen Sie eine, um eine weitere hinzuzufügen.', it: 'Massimo 10 città. Rimuovine una per aggiungerne un’altra.', pt: 'Máximo de 10 cidades. Remova uma para adicionar outra.', ru: 'Максимум 10 городов. Удалите один, чтобы добавить другой.', zh: '最多允许10个城市。要添加新城市请先删除一个。', ja: '最大10都市まで。追加するには一つ削除してください。', ko: '최대 10개 도시. 다른 도시를 추가하려면 하나를 제거하세요.'
   },
   noSavedCities: {
-    en: 'No saved cities yet. Add up to 3 cities for quick access.', es: 'Aún no hay ciudades guardadas. Agrega hasta 3 ciudades para acceso rápido.', fr: 'Aucune ville enregistrée. Ajoutez jusqu’à 3 villes pour un accès rapide.', de: 'Noch keine gespeicherten Städte. Fügen Sie bis zu 3 Städte hinzu.', it: 'Nessuna città salvata. Aggiungi fino a 3 città per accesso rapido.', pt: 'Nenhuma cidade salva ainda. Adicione até 3 para acesso rápido.', ru: 'Нет сохраненных городов. Добавьте до 3 для быстрого доступа.', zh: '还没有保存城市。最多添加3个以便快速访问。', ja: '保存された都市はまだありません。最大3件まで追加できます。', ko: '저장된 도시가 없습니다. 빠른 접근을 위해 최대 3개까지 추가하세요.'
+    en: 'No saved cities yet. Add up to 10 cities for quick access.', es: 'Aún no hay ciudades guardadas. Agrega hasta 10 ciudades para acceso rápido.', fr: 'Aucune ville enregistrée. Ajoutez jusqu’à 10 villes pour un accès rapide.', de: 'Noch keine gespeicherten Städte. Fügen Sie bis zu 10 Städte hinzu.', it: 'Nessuna città salvata. Aggiungi fino a 10 città per accesso rapido.', pt: 'Nenhuma cidade salva ainda. Adicione até 10 para acesso rápido.', ru: 'Нет сохраненных городов. Добавьте до 10 для быстрого доступа.', zh: '还没有保存城市。最多添加10个以便快速访问。', ja: '保存された都市はまだありません。最大10件まで追加できます。', ko: '저장된 도시가 없습니다. 빠른 접근을 위해 최대 10개까지 추가하세요.'
   },
   accountAndSubscription: {
     en: 'Account & Subscription', es: 'Cuenta y Suscripción', fr: 'Compte et Abonnement', de: 'Konto & Abonnement', it: 'Account e Abbonamento', pt: 'Conta e Assinatura', ru: 'Аккаунт и подписка', zh: '账户与订阅', ja: 'アカウントとサブスクリプション', ko: '계정 및 구독'
@@ -656,6 +656,8 @@ const translations = {
   fahrenheitUnit: { en: 'Fahrenheit (°F)', es: 'Fahrenheit (°F)', fr: 'Fahrenheit (°F)', de: 'Fahrenheit (°F)', it: 'Fahrenheit (°F)', pt: 'Fahrenheit (°F)', ru: 'Фаренгейт (°F)', zh: '华氏 (°F)', ja: '華氏 (°F)', ko: '화씨 (°F)' },
   support: { en: 'Support', es: 'Soporte', fr: 'Support', de: 'Support', it: 'Supporto', pt: 'Suporte', ru: 'Поддержка', zh: '支持', ja: 'サポート', ko: '지원' },
   supportEmail: { en: 'Support email', es: 'Correo de soporte', fr: 'Email du support', de: 'Support-E-Mail', it: 'Email di supporto', pt: 'E-mail de suporte', ru: 'Почта поддержки', zh: '支持邮箱', ja: 'サポートメール', ko: '지원 이메일' },
+  resetWelcome: { en: 'Show Welcome Screen', es: 'Mostrar pantalla de bienvenida', fr: 'Afficher l\'écran de bienvenue', de: 'Willkommensbildschirm anzeigen', it: 'Mostra schermata di benvenuto', pt: 'Mostrar tela de boas-vindas', ru: 'Показать приветственный экран', zh: '显示欢迎屏幕', ja: 'ウェルカム画面を表示', ko: '환영 화면 표시' },
+  welcomeResetMessage: { en: 'Welcome screen reset! Refresh the page to see it again.', es: '¡Pantalla de bienvenida restablecida! Actualiza la página para verla de nuevo.', fr: 'Écran de bienvenue réinitialisé ! Actualisez la page pour le revoir.', de: 'Willkommensbildschirm zurückgesetzt! Seite aktualisieren, um ihn erneut zu sehen.', it: 'Schermata di benvenuto ripristinata! Aggiorna la pagina per vederla di nuovo.', pt: 'Tela de boas-vindas redefinida! Atualize a página para vê-la novamente.', ru: 'Приветственный экран сброшен! Обновите страницу, чтобы увидеть его снова.', zh: '欢迎屏幕已重置！刷新页面以再次查看。', ja: 'ウェルカム画面がリセットされました！ページを更新して再度表示してください。', ko: '환영 화면이 재설정되었습니다! 페이지를 새로고침하여 다시 보세요.' },
   offlineSnapshot: { en: 'Offline snapshot', es: 'Instantánea sin conexión', fr: 'Instantané hors ligne', de: 'Offline-Schnappschuss', it: 'Istante offline', pt: 'Instantâneo offline', ru: 'Оффлайн-снимок', zh: '离线快照', ja: 'オフラインスナップショット', ko: '오프라인 스냅샷' },
   contactDevelopers: { en: 'Contact Developers', es: 'Contactar a los desarrolladores', fr: 'Contacter les développeurs', de: 'Entwickler kontaktieren', it: 'Contatta gli sviluppatori', pt: 'Contatar desenvolvedores', ru: 'Связаться с разработчиками', zh: '联系开发者', ja: '開発者に連絡', ko: '개발자에게 문의' },
   rateExperience: { en: 'Rate your experience', es: 'Califica tu experiencia', fr: 'Évaluez votre expérience', de: 'Bewerten Sie Ihre Erfahrung', it: 'Valuta la tua esperienza', pt: 'Avalie sua experiência', ru: 'Оцените ваш опыт', zh: '为您的体验评分', ja: '体験を評価', ko: '경험 평가' },
@@ -684,7 +686,18 @@ const translations = {
   moon_full: { en: 'Full Moon', es: 'Luna Llena', fr: 'Pleine Lune', de: 'Vollmond', it: 'Luna Piena', pt: 'Lua Cheia', ru: 'Полнолуние', zh: '满月', ja: '満月', ko: '보름달' },
   moon_waning_gibbous: { en: 'Waning Gibbous', es: 'Gibosa Menguante', fr: 'Gibbeuse Décroissante', de: 'Abnehmender Dreiviertelmond', it: 'Gibbosa Calante', pt: 'Gibosa Minguante', ru: 'Убывающая Выпуклая', zh: '亏凸月', ja: '十六夜/月齢16-18', ko: '하현 망간 전' },
   moon_last_quarter: { en: 'Last Quarter', es: 'Cuarto Menguante', fr: 'Dernier Quartier', de: 'Letztes Viertel', it: 'Ultimo Quarto', pt: 'Quarto Minguante', ru: 'Последняя Четверть', zh: '下弦月', ja: '下弦', ko: '하현' },
-  moon_waning_crescent: { en: 'Waning Crescent', es: 'Menguante', fr: 'Dernier Croissant', de: 'Abnehmende Sichel', it: 'Calante', pt: 'Minguante', ru: 'Убывающий Серп', zh: '残月', ja: '有明月', ko: '그믐달' }
+  moon_waning_crescent: { en: 'Waning Crescent', es: 'Menguante', fr: 'Dernier Croissant', de: 'Abnehmende Sichel', it: 'Calante', pt: 'Minguante', ru: 'Убывающий Серп', zh: '残月', ja: '有明月', ko: '그믐달' },
+  
+  // Welcome Modal
+  welcome: { en: 'Welcome', es: 'Bienvenido', fr: 'Bienvenue', de: 'Willkommen', it: 'Benvenuto', pt: 'Bem-vindo', ru: 'Добро пожаловать', zh: '欢迎', ja: 'ようこそ', ko: '환영합니다' },
+  welcomeSubtitle: { en: 'Configure your preferences', es: 'Configura tus preferencias', fr: 'Configurez vos préférences', de: 'Konfigurieren Sie Ihre Einstellungen', it: 'Configura le tue preferenze', pt: 'Configure suas preferências', ru: 'Настройте ваши предпочтения', zh: '配置您的偏好设置', ja: 'お好みを設定してください', ko: '당신의 선호도를 설정하세요' },
+  timeFormatDesc: { en: 'Auto: Uses your system settings', es: 'Auto: Usa la configuración del sistema', fr: 'Auto: Utilise les paramètres de votre système', de: 'Auto: Verwendet Ihre Systemeinstellungen', it: 'Auto: Utilizza le impostazioni di sistema', pt: 'Auto: Usa as configurações do seu sistema', ru: 'Авто: использует системные параметры', zh: '自动：使用您的系统设置', ja: '自動：お使いのシステム設定を使用します', ko: '자동：시스템 설정 사용' },
+  rollbackModeDesc: { en: 'Use fallback services', es: 'Usar servicios de respaldo', fr: 'Utiliser les services de secours', de: 'Verwenden Sie Fallback-Services', it: 'Utilizza servizi di fallback', pt: 'Usar serviços de fallback', ru: 'Использовать резервные сервисы', zh: '使用备用服务', ja: 'フォールバックサービスを使用', ko: '대체 서비스 사용' },
+  thanksFromAdmin: { en: 'Thanks from Admin', es: 'Gracias del Administrador', fr: 'Merci de l\'Administrateur', de: 'Danke vom Admin', it: 'Grazie da Admin', pt: 'Obrigado do Admin', ru: 'Спасибо от администратора', zh: '管理员的感谢', ja: '管理者からのお礼', ko: '관리자 감사의 말' },
+  adminMessage: { en: 'Thank you for using Alpik941 Weather App! We appreciate your feedback and support. Enjoy accurate weather forecasts and beautiful 3D visualization!', es: '¡Gracias por usar la aplicación de clima Alpik941! Apreciamos tus comentarios y apoyo. ¡Disfruta pronósticos de clima precisos y hermosa visualización en 3D!', fr: 'Merci d\'utiliser l\'application météo Alpik941 ! Nous apprécions vos commentaires et votre soutien. Profitez de prévisions météo précises et d\'une belle visualisation 3D !', de: 'Vielen Dank, dass Sie die Alpik941-Wetter-App verwenden! Wir schätzen Ihr Feedback und Ihre Unterstützung. Genießen Sie genaue Wettervorhersagen und schöne 3D-Visualisierung!', it: 'Grazie per aver utilizzato l\'app meteorologica Alpik941! Apprezziamo il tuo feedback e il tuo supporto. Goditi previsioni meteorologiche accurate e una bellissima visualizzazione 3D!', pt: 'Obrigado por usar o aplicativo de clima Alpik941! Apreciamos seu feedback e suporte. Desfrute de previsões de clima precisas e bela visualização 3D!', ru: 'Спасибо за использование приложения Alpik941 Weather! Мы ценим вашу обратную связь и поддержку. Наслаждайтесь точными прогнозами погоды и красивой 3D-визуализацией!', zh: '感谢您使用Alpik941天气应用！我们感谢您的反馈和支持。享受准确的天气预报和美丽的3D可视化！', ja: 'Alpik941天気アプリをご使用いただきありがとうございます！フィードバックとサポートに感謝します。正確な天気予報と美しい3D可視化をお楽しみください！', ko: 'Alpik941 날씨 앱을 사용해주셔서 감사합니다! 피드백과 지원에 감사드립니다. 정확한 날씨 예보와 아름다운 3D 시각화를 즐기세요!' },
+  getStarted: { en: 'Get Started', es: 'Comenzar', fr: 'Commencer', de: 'Beginnen', it: 'Inizia', pt: 'Começar', ru: 'Начать', zh: '开始', ja: '開始', ko: '시작하기' },
+  on: { en: 'ON', es: 'ENCENDIDO', fr: 'ACTIVÉ', de: 'AN', it: 'ACCESO', pt: 'LIGADO', ru: 'ВКЛ', zh: '开启', ja: 'オン', ko: '켜짐' },
+  off: { en: 'OFF', es: 'APAGADO', fr: 'DÉSACTIVÉ', de: 'AUS', it: 'SPENTO', pt: 'DESLIGADO', ru: 'ВЫКЛ', zh: '关闭', ja: 'オフ', ko: '꺼짐' }
 };
 
 export const LanguageContext = createContext(undefined);

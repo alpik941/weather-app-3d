@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { convertTemperature, formatTemperatureDisplay } from '../services/weatherService';
 import { useTime } from '../contexts/TimeContext';
 
-export default function ForecastCard({ data, icon, cardClass, fontClass }) {
+const ForecastCard = React.memo(function ForecastCard({ data, icon, cardClass, fontClass }) {
   const { t, language } = useLanguage();
   const { theme, temperatureUnit } = useTheme();
   const { formatDate } = useTime();
@@ -77,4 +77,6 @@ export default function ForecastCard({ data, icon, cardClass, fontClass }) {
       </p>
     </div>
   );
-}
+});
+
+export default ForecastCard;

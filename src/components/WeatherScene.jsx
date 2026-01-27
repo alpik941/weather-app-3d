@@ -5,60 +5,70 @@ import * as THREE from 'three';
 import Moon from './Moon';
 import CelestialSun from './CelestialSun';
 import CelestialMoon from './CelestialMoon';
+import { useTheme } from '../contexts/ThemeContext';
 
-// Realistic Rain Particles
-function RainParticles({ intensity = 1000 }) {
-  const ref = useRef(null);
-  
-  const particles = useMemo(() => {
-    const positions = new Float32Array(intensity * 3);
-    const velocities = new Float32Array(intensity * 3);
-    
-    for (let i = 0; i < intensity; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 40;
-      positions[i * 3 + 1] = Math.random() * 40 + 10;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-      
-      velocities[i * 3] = (Math.random() - 0.5) * 0.2;
-      velocities[i * 3 + 1] = -Math.random() * 0.5 - 0.3;
-      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.1;
+// Physically-plausible rain streaks (instanced planes with slight wind and length variance)
+function RainStreaks({ count = 1400, area = 60, wind = 0.35 }) {
+  const meshRef = useRef(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  const { offsets, speeds, lengths } = useMemo(() => {
+    const offsets = new Float32Array(count * 3);
+    const speeds = new Float32Array(count);
+    const lengths = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      offsets[i * 3] = (Math.random() - 0.5) * area;
+      offsets[i * 3 + 1] = Math.random() * area * 0.8 + 10;
+      offsets[i * 3 + 2] = (Math.random() - 0.5) * area;
+
+      speeds[i] = 0.8 + Math.random() * 0.6; // varied fall speed
+      lengths[i] = 0.6 + Math.random() * 0.7; // varied streak length
     }
-    
-    return { positions, velocities };
-  }, [intensity]);
 
-  useFrame(() => {
-    if (ref.current) {
-      const positions = ref.current.geometry.attributes.position.array;
-      
-      for (let i = 0; i < intensity; i++) {
-        positions[i * 3] += particles.velocities[i * 3];
-        positions[i * 3 + 1] += particles.velocities[i * 3 + 1];
-        positions[i * 3 + 2] += particles.velocities[i * 3 + 2];
-        
-        if (positions[i * 3 + 1] < -10) {
-          positions[i * 3] = (Math.random() - 0.5) * 40;
-          positions[i * 3 + 1] = 40;
-          positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-        }
+    return { offsets, speeds, lengths };
+  }, [count, area]);
+
+  useFrame((_, delta) => {
+    const m = meshRef.current;
+    if (!m) return;
+    for (let i = 0; i < count; i++) {
+      // update Y position
+      offsets[i * 3 + 1] -= speeds[i] * (delta * 60);
+      offsets[i * 3] += wind * 0.02; // slight wind drift
+
+      if (offsets[i * 3 + 1] < -10) {
+        offsets[i * 3] = (Math.random() - 0.5) * area;
+        offsets[i * 3 + 1] = Math.random() * area * 0.5 + 20;
+        offsets[i * 3 + 2] = (Math.random() - 0.5) * area;
       }
-      
-      ref.current.geometry.attributes.position.needsUpdate = true;
+
+      dummy.position.set(
+        offsets[i * 3],
+        offsets[i * 3 + 1],
+        offsets[i * 3 + 2]
+      );
+      dummy.rotation.set(-Math.PI / 2 + 0.05, 0, wind * 0.08); // slight tilt
+      dummy.scale.set(0.04, lengths[i], 0.04);
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
     }
+
+    m.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <Points ref={ref} positions={particles.positions}>
-      <PointMaterial
+    <instancedMesh ref={meshRef} args={[null, null, count]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial
+        color="#8fb3ff"
         transparent
-        size={0.1}
-        sizeAttenuation={true}
-        color="#87CEEB"
-        opacity={0.8}
+        opacity={0.55}
+        roughness={0.8}
+        metalness={0}
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
       />
-    </Points>
+    </instancedMesh>
   );
 }
 
@@ -148,7 +158,7 @@ function DynamicClouds({ coverage = 0.5, isStormy = false }) {
           ]}
           scale={Math.random() * 2 + 1}
           opacity={isStormy ? 0.8 : 0.4}
-          color={isStormy ? "#4A5568" : "#FFFFFF"}
+          color={isStormy ? "#7fa4d2" : "#cfe7ff"}
           speed={0.1}
         />
       ))}
@@ -184,15 +194,15 @@ function Lightning({ active }) {
 }
 
 // Fog Effect
-function FogEffect({ density = 0.01 }) {
+function FogEffect({ color = 0x0f1624, near = 5, far = 60 }) {
   const { scene } = useThree();
   
   useEffect(() => {
-    scene.fog = new THREE.Fog(0xcccccc, 10, 100);
+    scene.fog = new THREE.Fog(color, near, far);
     return () => {
       scene.fog = null;
     };
-  }, [scene, density]);
+  }, [scene, color, near, far]);
 
   return null;
 }
@@ -285,7 +295,9 @@ export default function WeatherScene({
   cloudCoverage = 0.5,
   mode = '3d' // '3d' | 'css'
 }) {
+  const { theme } = useTheme();
   const weatherCondition = weather?.toLowerCase() || 'clear';
+  const backgroundMoonSize = 64;
   
   // Determine weather effects
   const isRaining = weatherCondition.includes('rain') || weatherCondition.includes('drizzle');
@@ -300,12 +312,22 @@ export default function WeatherScene({
       <div className="relative w-full h-48 flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-sky-300/20 to-sky-900/40 dark:from-slate-800 dark:to-slate-950" />
         {isNight ? (
-          <CelestialMoon phase={0.6} size={96} />
+          // Show moon at night: clear, clouds, or precipitation
+          (!isRaining && !isSnowing && !isCloudy) ? (
+            <CelestialMoon phase={0.6} size={backgroundMoonSize} />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gray-400/20 blur-sm" />
+          )
         ) : (
-          <CelestialSun temperature={temperature} size={96} />
+          // Day: show sun only in clear weather, diffused glow during precipitation
+          (!isRaining && !isSnowing && !isCloudy) ? (
+            <CelestialSun temperature={temperature} size={72} />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-yellow-200/30 dark:bg-yellow-300/20 blur-md" />
+          )
         )}
-        {/* Simple stars for night */}
-        {isNight && (
+        {/* Simple stars for night (only in clear weather) */}
+        {isNight && !isRaining && !isSnowing && !isCloudy && (
           <div className="absolute inset-0 pointer-events-none">
             {Array.from({ length: 40 }).map((_, i) => (
               <span
@@ -332,17 +354,17 @@ export default function WeatherScene({
       style={{ background: 'transparent' }}
     >
       {/* Lighting Setup */}
-      <ambientLight intensity={isNight ? 0.2 : 0.6} color={isNight ? "#4A5568" : "#FFFFFF"} />
+      <ambientLight intensity={isRaining ? 0.15 : isNight ? 0.2 : 0.6} color={isNight ? "#2f3545" : "#FFFFFF"} />
       <directionalLight 
-        position={isNight ? [-10, 10, 5] : [10, 10, 5]} 
-        intensity={isNight ? 0.3 : 1} 
-        color={isNight ? "#6B73FF" : "#FFFFFF"}
+        position={isNight ? [-6, 12, 4] : [10, 10, 5]} 
+        intensity={isRaining ? 0.15 : isNight ? 0.3 : 1} 
+        color={isNight ? "#7586a3" : "#FFFFFF"}
         castShadow
       />
       
       {/* Sky and Stars */}
-      {isNight && <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />}
-      {!isNight && !isCloudy && (
+      {isNight && !isRaining && !isSnowing && !isCloudy && <Stars radius={100} depth={50} count={1200} factor={2.5} saturation={0} fade />}
+      {!isNight && !isCloudy && !isRaining && !isSnowing && (
         <Sky
           distance={450000}
           sunPosition={[10, 10, -10]}
@@ -353,21 +375,60 @@ export default function WeatherScene({
 
       {/* Celestial Bodies */}
       {isNight ? (
-  <group position={[-15, 15, -20]} scale={[2, 2, 2]}>
-    <Moon />
-  </group>
-) : (
-  <Sun temperature={temperature} isVisible={!isNight} />
-)}
+        (isRaining || isSnowing || isCloudy) ? (
+          // Diffused moon behind clouds/precipitation
+          <group position={[-12, 12, -18]} scale={[2.2, 2.2, 2.2]}>
+            <Sphere args={[2.2, 32, 32]}>
+              <meshStandardMaterial
+                color="#cfd8e3"
+                emissive="#9aa5b5"
+                emissiveIntensity={isSnowing ? 0.12 : 0.1}
+                transparent
+                opacity={isSnowing ? 0.2 : isCloudy ? 0.3 : 0.35}
+                roughness={1}
+                metalness={0}
+              />
+            </Sphere>
+          </group>
+        ) : (
+          <group position={[-15, 14, -20]} scale={[2, 2, 2]}>
+            <Moon lightTheme={theme === 'light'} />
+          </group>
+        )
+      ) : (
+        // Day: hide sun during snow/rain/heavy clouds, show diffused glow instead
+        (isSnowing || isRaining || isCloudy) ? (
+          <group position={[12, 12, -18]} scale={[1.5, 1.5, 1.5]}>
+            <Sphere args={[1.5, 32, 32]}>
+              <meshStandardMaterial
+                color="#fff5e1"
+                emissive="#ffe4b3"
+                emissiveIntensity={isSnowing ? 0.2 : 0.15}
+                transparent
+                opacity={isSnowing ? 0.15 : isRaining ? 0.2 : 0.25}
+                roughness={1}
+                metalness={0}
+              />
+            </Sphere>
+          </group>
+        ) : (
+          <Sun temperature={temperature} isVisible={true} />
+        )
+      )}
 
       {/* Weather Effects */}
-      {isRaining && <RainParticles intensity={isThunderstorm ? 1500 : 1000} />}
+      {isRaining && (
+        <>
+          <RainStreaks count={isThunderstorm ? 2000 : 1400} area={70} wind={Math.min(windSpeed / 20, 0.6)} />
+          <FogEffect color={0x0f1624} near={4} far={55} />
+        </>
+      )}
       {isSnowing && <SnowParticles intensity={800} />}
-      {(isCloudy || isThunderstorm) && (
-        <DynamicClouds coverage={cloudCoverage} isStormy={isThunderstorm} />
+      {(isCloudy || isThunderstorm || isRaining) && (
+        <DynamicClouds coverage={Math.max(cloudCoverage, isRaining ? 0.9 : 0.6)} isStormy={true} />
       )}
       {isThunderstorm && <Lightning active={true} />}
-      {isFoggy && <FogEffect density={0.02} />}
+      {isFoggy && !isRaining && <FogEffect color={0x1f2937} near={6} far={70} />}
       {isWindy && <WindParticles speed={windSpeed} />}
 
       {/* Clear Weather Atmosphere */}
@@ -392,21 +453,23 @@ export default function WeatherScene({
         </group>
       )}
 
-      {/* Subtle background particles for atmosphere */}
-      <Points positions={new Float32Array(Array.from({ length: 300 }, () => [
-        (Math.random() - 0.5) * 100,
-        (Math.random() - 0.5) * 50,
-        (Math.random() - 0.5) * 100
-      ]).flat())}>
-        <PointMaterial
-          transparent
-          size={0.01}
-          sizeAttenuation={true}
-          color={isNight ? "#4A5568" : "#87CEEB"}
-          opacity={0.2}
-          depthWrite={false}
-        />
-      </Points>
+      {/* Subtle background particles for atmosphere (disabled during rain to avoid snow-like look) */}
+      {!isRaining && (
+        <Points positions={new Float32Array(Array.from({ length: 300 }, () => [
+          (Math.random() - 0.5) * 100,
+          (Math.random() - 0.5) * 50,
+          (Math.random() - 0.5) * 100
+        ]).flat())}>
+          <PointMaterial
+            transparent
+            size={0.01}
+            sizeAttenuation={true}
+            color={isNight ? "#4A5568" : "#87CEEB"}
+            opacity={0.2}
+            depthWrite={false}
+          />
+        </Points>
+      )}
     </Canvas>
   );
 }

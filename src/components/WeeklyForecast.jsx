@@ -9,7 +9,7 @@ import { convertWindSpeed, getWindSpeedUnit, formatWindSpeed } from '../utils/wi
 import { useTime } from '../contexts/TimeContext';
 import { dayKey } from '../utils/timeFormat';
 
-export default function WeeklyForecast({ data, getWeatherIcon, fontClass }) {
+const WeeklyForecast = React.memo(function WeeklyForecast({ data, getWeatherIcon, fontClass }) {
   const { temperatureUnit, windSpeedUnit, theme } = useTheme();
   const { t, language } = useLanguage();
   const translateWeatherDescription = useTranslateWeatherDescription();
@@ -125,4 +125,6 @@ export default function WeeklyForecast({ data, getWeatherIcon, fontClass }) {
       </div>
     </div>
   );
-}
+});
+
+export default WeeklyForecast;

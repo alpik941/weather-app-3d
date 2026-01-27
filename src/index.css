@@ -1,3 +1,68 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+	@keyframes cloud-appear {
+		from {
+			opacity: 0;
+			filter: blur(1px);
+		}
+		to {
+			opacity: 1;
+			filter: blur(0px);
+		}
+	}
+
+	@keyframes cloud-drift {
+		from {
+			transform: translate3d(-30vw, 0, 0);
+		}
+		to {
+			transform: translate3d(130vw, 0, 0);
+		}
+	}
+
+	.animate-cloud-appear {
+		animation: cloud-appear 900ms ease-out both;
+		will-change: opacity, filter;
+	}
+
+	.animate-cloud-drift {
+		animation-name: cloud-drift;
+		animation-duration: var(--cloud-drift-duration, 60s);
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+		animation-delay: var(--cloud-drift-delay, 0s);
+		animation-direction: var(--cloud-drift-direction, normal);
+		will-change: transform;
+	}
+
+	.cloud-edge-fade {
+		-webkit-mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, 0) 0%,
+			rgba(0, 0, 0, 1) 14%,
+			rgba(0, 0, 0, 1) 86%,
+			rgba(0, 0, 0, 0) 100%
+		);
+		mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, 0) 0%,
+			rgba(0, 0, 0, 1) 14%,
+			rgba(0, 0, 0, 1) 86%,
+			rgba(0, 0, 0, 0) 100%
+		);
+		-webkit-mask-size: 100% 100%;
+		mask-size: 100% 100%;
+		-webkit-mask-repeat: no-repeat;
+		mask-repeat: no-repeat;
+		will-change: -webkit-mask-image, mask-image;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.animate-cloud-drift {
+			animation: none !important;
+		}
+	}
+}

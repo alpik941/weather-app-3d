@@ -100,3 +100,22 @@ const windSpeedToBeaufort = (speedMs) => {
   if (speedMs < 32.7) return 11;
   return 12;
 };
+
+/**
+ * Calculate wind chill (feels like temperature) using Canadian wind chill formula
+ * Only valid for temperatures ≤ 10°C and wind speed > 4.8 km/h
+ * @param {number} tempC - Temperature in Celsius
+ * @param {number} windSpeedKmh - Wind speed in km/h
+ * @returns {number} Wind chill temperature in Celsius
+ */
+export const calculateWindChill = (tempC, windSpeedKmh) => {
+  // Wind chill only applies at cold temperatures
+  if (tempC > 10 || windSpeedKmh <= 4.8) {
+    return tempC;
+  }
+  // Canadian formula: Twc = 13.12 + 0.6215Ta - 11.37(v^0.16) + 0.3965Ta(v^0.16)
+  // where Twc is wind chill, Ta is air temperature (°C), v is wind speed (km/h)
+  const v16 = Math.pow(windSpeedKmh, 0.16);
+  const windChill = 13.12 + 0.6215 * tempC - 11.37 * v16 + 0.3965 * tempC * v16;
+  return Math.round(windChill * 10) / 10; // Round to 1 decimal place
+};

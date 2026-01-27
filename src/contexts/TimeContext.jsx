@@ -30,24 +30,6 @@ export function TimeProvider({ children, initialTimezone, fallbackTimezone }) {
     }
   }, [initialTimezone, timezone]);
 
-  // Diagnostic once on mount (dev aid): log sample offsets if not production
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !window.__TIME_DIAG_LOGGED__) {
-      window.__TIME_DIAG_LOGGED__ = true;
-      const samples = ['UTC','Europe/Moscow','America/New_York','Asia/Kathmandu'];
-      try {
-        const now = Date.now();
-        const rows = samples.map(tz => {
-          try {
-            const parts = new Intl.DateTimeFormat('en-US',{ timeZone: tz, hour:'2-digit', hour12:false, minute:'2-digit'}).formatToParts(now);
-            return { tz, local: parts.map(p=>p.value).join('') };
-          } catch { return { tz, error: true }; }
-        });
-        console.log('[TimeContext][diagnostic] sample local times', rows);
-      } catch {}
-    }
-  }, []);
-
   const toggleHour12 = () => setHour12(prev => {
     const next = prev === true ? false : prev === false ? undefined : true; // cycle true -> false -> undefined -> true
     if (next === undefined) localStorage.removeItem('TIME_HOUR12'); else localStorage.setItem('TIME_HOUR12', String(next));

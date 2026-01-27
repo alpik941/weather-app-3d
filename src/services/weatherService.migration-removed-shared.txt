@@ -1,4 +1,0 @@
-React Native shared layer removed on 2025-11-09.
-Deleted: mobile/ directory (Expo project) and src/shared/ alias references.
-weatherService.js now standalone (web only) with inline helper functions.
-windSpeed.js reverted to local implementation.

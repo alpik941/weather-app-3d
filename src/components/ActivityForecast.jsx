@@ -32,7 +32,7 @@ const getScoreColor = (score = 0) =>
 const getScoreBackground = (score = 0) =>
   score >= 80 ? 'bg-green-500/10' : score >= 60 ? 'bg-yellow-500/10' : score >= 40 ? 'bg-orange-500/10' : 'bg-red-500/10';
 
-export default function ActivityForecast({ data, fontClass }) {
+const ActivityForecast = React.memo(function ActivityForecast({ data, fontClass }) {
   const { t } = useLanguage();
   if (!data) return null;
 
@@ -98,4 +98,6 @@ export default function ActivityForecast({ data, fontClass }) {
       </div>
     </div>
   );
-}
+});
+
+export default ActivityForecast;

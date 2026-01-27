@@ -18,6 +18,7 @@ export default function Moon({
   quality = "high", // 'low' | 'medium' | 'high'
   showGlow = true,
   showAtmosphere = true,
+  lightTheme = false,
   texturePath = "/textures/moon/Moon.jpg",
   bumpPath = "/textures/moon/moon_bump.jpg",
   specularPath = "/textures/moon/moon_specular.jpg"
@@ -25,25 +26,55 @@ export default function Moon({
   const moonRef = useRef();
   const [maps, setMaps] = useState({ color: null, bump: null, specular: null });
 
-  // Segment resolution based on quality
-  const segments = quality === 'low' ? 48 : quality === 'medium' ? 64 : 96;
+  // Segment resolution based on quality - increased for better bump visibility
+  const segments = quality === 'low' ? 64 : quality === 'medium' ? 96 : 128;
 
   useEffect(() => {
     let mounted = true;
     const loader = new THREE.TextureLoader();
 
-    const safeLoad = (url, onSuccess) => {
-      loader.load(
-        url,
-        (tex) => { if (mounted) onSuccess(tex); },
-        undefined,
-        () => { /* silent fail, keep null */ }
-      );
+    // Fallback texture sources
+    const textureSources = [
+      texturePath,
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
+      '/textures/2k_moon.jpg'
+    ];
+
+    const bumpSources = [
+      bumpPath,
+      '/textures/2k_moon_bump.jpg',
+      'https://s3-us-west-2.amazonaws.com/s.cdpn.io/17271/lroc_color_poles_1k.jpg'
+    ];
+
+    const loadWithFallback = (sources, onSuccess, type = 'texture') => {
+      let currentIndex = 0;
+      const tryLoad = () => {
+        if (currentIndex >= sources.length) {
+          console.warn(`Failed to load ${type} from all sources`);
+          return;
+        }
+        loader.load(
+          sources[currentIndex],
+          (tex) => {
+            if (!mounted) return;
+            // Enhance texture quality
+            tex.anisotropy = 16;
+            tex.minFilter = THREE.LinearMipMapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            onSuccess(tex);
+          },
+          undefined,
+          () => {
+            currentIndex++;
+            tryLoad();
+          }
+        );
+      };
+      tryLoad();
     };
 
-    safeLoad(texturePath, (color) => setMaps(prev => ({ ...prev, color })));
-    safeLoad(bumpPath, (bump) => setMaps(prev => ({ ...prev, bump })));
-    safeLoad(specularPath, (specular) => setMaps(prev => ({ ...prev, specular })));
+    loadWithFallback(textureSources, (color) => setMaps(prev => ({ ...prev, color })), 'color map');
+    loadWithFallback(bumpSources, (bump) => setMaps(prev => ({ ...prev, bump })), 'bump map');
 
     return () => { mounted = false; };
   }, [texturePath, bumpPath, specularPath]);
@@ -58,12 +89,15 @@ export default function Moon({
   const materialProps = useMemo(() => ({
     map: maps.color || null,
     bumpMap: maps.bump || null,
-    bumpScale: maps.bump ? 0.08 : 0,
-    roughness: 0.9,
-    metalness: 0.1,
-    emissive: "#2a2a2a",
-    emissiveIntensity: 0.12,
-  }), [maps]);
+    bumpScale: maps.bump ? 0.35 : 0, // Increased for visible relief
+    normalMap: maps.bump || null,
+    normalScale: maps.bump ? [0.8, 0.8] : [0, 0],
+    roughness: lightTheme ? 0.9 : 0.95,
+    metalness: 0.0,
+    emissive: lightTheme ? "#8a8a82" : "#1a1a1a",
+    emissiveIntensity: lightTheme ? 0.4 : 0.08,
+    color: lightTheme ? "#a0a099" : "#ffffff",
+  }), [maps, lightTheme]);
 
   return (
     <>
@@ -76,9 +110,9 @@ export default function Moon({
         <mesh>
           <sphereGeometry args={[radius * 1.03, 48, 48]} />
           <meshBasicMaterial
-            color="white"
+            color={lightTheme ? "#9a9a92" : "white"}
             transparent
-            opacity={0.04}
+            opacity={lightTheme ? 0.12 : 0.04}
             side={THREE.BackSide}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
@@ -90,9 +124,9 @@ export default function Moon({
         <mesh scale={[1.1, 1.1, 1.1]}>
           <sphereGeometry args={[radius, 32, 32]} />
           <meshBasicMaterial
-            color="#4a5a7a"
+            color={lightTheme ? "#7d7d7a" : "#4a5a7a"}
             transparent
-            opacity={0.025}
+            opacity={lightTheme ? 0.06 : 0.025}
             side={THREE.BackSide}
             depthWrite={false}
           />

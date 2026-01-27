@@ -1,4 +1,4 @@
-# MeylisBrothers Weather App — Web ↔ React Native Migration
+# Alpik941 Weather App — Web ↔ React Native Migration
 
 This repo hosts the primary Web app (Vite + React) in `src/` and an Expo (React Native) app in `mobile/`.
 

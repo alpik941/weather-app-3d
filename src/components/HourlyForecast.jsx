@@ -8,7 +8,7 @@ import { convertWindSpeed, getWindSpeedUnit, formatWindSpeed } from '../utils/wi
 import { useTime } from '../contexts/TimeContext';
 import { dayKey } from '../utils/timeFormat';
 
-export default function HourlyForecast({ data, getWeatherIcon, cardClass, fontClass }) {
+const HourlyForecast = React.memo(function HourlyForecast({ data, getWeatherIcon, cardClass, fontClass }) {
   const { temperatureUnit, windSpeedUnit, theme } = useTheme();
   const { t, language } = useLanguage();
   const { timezone, formatTime, formatDate, dayKey: ctxDayKey } = useTime();
@@ -113,4 +113,6 @@ export default function HourlyForecast({ data, getWeatherIcon, cardClass, fontCl
       </div>
     </div>
   );
-}
+});
+
+export default HourlyForecast;

@@ -8,7 +8,7 @@ import { useTranslateWeatherDescription } from '../utils/translateWeatherDescrip
 import { convertTemperature, formatTemperatureDisplay } from '../services/weatherService';
 import { useTime } from '../contexts/TimeContext';
 
-export default function WeatherCard({ data, icon }) {
+const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
   const { windSpeedUnit, temperatureUnit, theme } = useTheme();
   const { t } = useLanguage();
   const translateWeatherDescription = useTranslateWeatherDescription();
@@ -228,4 +228,6 @@ export default function WeatherCard({ data, icon }) {
       </div>
     </div>
   );
-}
+});
+
+export default WeatherCard;

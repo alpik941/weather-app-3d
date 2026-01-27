@@ -143,7 +143,11 @@ export default function SettingsPanel({ isOpen, onClose, onCitySelect }) {
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-800 z-50 overflow-y-auto"
+        className="fixed right-0 top-0 h-full w-80 z-50 overflow-y-auto backdrop-blur-xl bg-white/30 dark:bg-gray-900/40 border-l border-white/30 dark:border-white/20"
+        style={{
+          backdropFilter: 'blur(15px)',
+          WebkitBackdropFilter: 'blur(15px)',
+        }}
       >
         <div className="p-6">
           {/* Header */}

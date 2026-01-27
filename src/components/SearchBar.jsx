@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, MapPin, Locate, Clock } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -49,7 +49,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
   }, []);
 
   // Fetch city suggestions
-  const fetchSuggestions = async (searchQuery) => {
+  const fetchSuggestions = useCallback(async (searchQuery) => {
     if (searchQuery.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -80,7 +80,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_KEY]);
 
   // Handle input change with debouncing
   const handleInputChange = (e) => {
@@ -105,7 +105,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
     }
   };
 
-  const handleCitySelect = (cityName) => {
+  const handleCitySelect = useCallback((cityName) => {
     onSearch(cityName);
     
     // Add to recent searches
@@ -118,36 +118,36 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
     setIsExpanded(false);
     setShowSuggestions(false);
     setSuggestions([]);
-  };
+  }, [onSearch, recentSearches]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setQuery('');
     setSuggestions([]);
     setShowSuggestions(false);
     inputRef.current?.focus();
-  };
+  }, []);
 
-  const handleExpand = () => {
+  const handleExpand = useCallback(() => {
     setIsExpanded(true);
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
-  };
+  }, []);
 
-  const handleCollapse = () => {
+  const handleCollapse = useCallback(() => {
     if (!query) {
       setIsExpanded(false);
       setShowSuggestions(false);
       setSuggestions([]);
     }
-  };
+  }, [query]);
 
-  const formatCityDisplay = (suggestion) => {
+  const formatCityDisplay = useCallback((suggestion) => {
     if (suggestion.state) {
       return `${suggestion.name}, ${suggestion.state}, ${suggestion.country}`;
     }
     return `${suggestion.name}, ${suggestion.country}`;
-  };
+  }, []);
 
   const [isHovered, setIsHovered] = useState(false); 
  return (

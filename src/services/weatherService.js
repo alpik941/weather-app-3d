@@ -8,6 +8,97 @@ const WEATHERAPI_BASE_URL = 'https://api.weatherapi.com/v1';
 const OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 const SUNRISE_SUNSET_BASE_URL = 'https://api.sunrisesunset.io/json';
 
+// Import wind chill calculator
+import { calculateWindChill } from '../utils/windSpeed.js';
+
+// --- Weather Data Validation System ---
+// Global validation errors array for modal display
+let validationErrors = [];
+
+export const getValidationErrors = () => validationErrors;
+export const clearValidationErrors = () => { validationErrors = []; };
+
+const addValidationError = (error) => {
+  validationErrors.push(error);
+};
+
+// --- alerts / warnings normalization ---
+const SEVERITY_ORDER = { red: 0, orange: 1, yellow: 2 };
+
+const normalizeAlertType = (event) => {
+  const s = String(event || '')
+    .toLowerCase()
+    .replace(/\b(warning|watch|advisory|statement|alert)\b/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  return s || 'unknown';
+};
+
+const isAlertActive = (alert, nowSeconds) => {
+  const now = typeof nowSeconds === 'number' ? nowSeconds : Math.floor(Date.now() / 1000);
+  const start = typeof alert?.start === 'number' ? alert.start : undefined;
+  const end = typeof alert?.end === 'number' ? alert.end : undefined;
+
+  // If we have an explicit expiry, treat end <= now as ended.
+  if (typeof end === 'number' && end <= now) return false;
+
+  // If start is in the future, treat as upcoming (not active).
+  if (typeof start === 'number' && start > now) return false;
+
+  return true;
+};
+
+/**
+ * Normalize alerts for display:
+ * - removes ended (end <= now)
+ * - removes upcoming (start > now)
+ * - deduplicates by normalized "type" (derived from event)
+ * - prefers higher severity and later end
+ */
+export const normalizeAlertsForDisplay = (alerts, { nowSeconds } = {}) => {
+  if (!Array.isArray(alerts)) return [];
+  const now = typeof nowSeconds === 'number' ? nowSeconds : Math.floor(Date.now() / 1000);
+
+  const active = alerts.filter((a) => isAlertActive(a, now));
+
+  // Group by type (weather phenomenon)
+  const bestByType = new Map();
+  for (const alert of active) {
+    const typeKey = normalizeAlertType(alert?.event);
+    const prev = bestByType.get(typeKey);
+    if (!prev) {
+      bestByType.set(typeKey, alert);
+      continue;
+    }
+
+    const sevA = SEVERITY_ORDER[alert?.severity] ?? SEVERITY_ORDER.yellow;
+    const sevB = SEVERITY_ORDER[prev?.severity] ?? SEVERITY_ORDER.yellow;
+    if (sevA < sevB) {
+      bestByType.set(typeKey, alert);
+      continue;
+    }
+    if (sevA > sevB) continue;
+
+    // same severity: prefer the one that expires later
+    const endA = typeof alert?.end === 'number' ? alert.end : -Infinity;
+    const endB = typeof prev?.end === 'number' ? prev.end : -Infinity;
+    if (endA > endB) {
+      bestByType.set(typeKey, alert);
+      continue;
+    }
+  }
+
+  // Final sort: severity (red first) then soonest end first (more urgent)
+  return Array.from(bestByType.values()).sort((a, b) => {
+    const sa = SEVERITY_ORDER[a?.severity] ?? SEVERITY_ORDER.yellow;
+    const sb = SEVERITY_ORDER[b?.severity] ?? SEVERITY_ORDER.yellow;
+    if (sa !== sb) return sa - sb;
+    const ea = typeof a?.end === 'number' ? a.end : Infinity;
+    const eb = typeof b?.end === 'number' ? b.end : Infinity;
+    return ea - eb;
+  });
+};
+
 // --- helpers ---
 const convertUTCToTimestamp = (iso) => {
   try {
@@ -19,10 +110,32 @@ const convertUTCToTimestamp = (iso) => {
   }
 };
 
+/**
+ * Fix precipitation type based on temperature
+ * If temp < 0°C and condition is Rain, convert to Snow or Sleet
+ */
+const fixPrecipitationType = (main, description, tempC) => {
+  if (typeof tempC !== 'number') return { main, description };
+  
+  // Critical: Rain cannot occur below freezing
+  if (tempC < 0 && main === 'Rain') {
+    const newType = tempC < -5 ? 'Snow' : 'Sleet';
+    addValidationError({
+      type: 'precipitation_type_error',
+      message: `Temperature ${tempC.toFixed(1)}°C is below freezing, but precipitation type is Rain. Changed to ${newType}.`,
+      severity: 'warning'
+    });
+    return { main: newType, description: description.replace(/rain/gi, newType.toLowerCase()) };
+  }
+  
+  return { main, description };
+};
+
 const normalizeCondition = (text, ctx = {}) => {
   const description = (text || '').toLowerCase();
   const visKm = typeof ctx.visKm === 'number' ? ctx.visKm : undefined;
   const cloud = typeof ctx.cloud === 'number' ? ctx.cloud : undefined;
+  const tempC = typeof ctx.temp === 'number' ? ctx.temp : undefined;
   const isObscuration = /(fog|mist|haze|smoke)/i.test(description);
   if (isObscuration && (visKm != null && visKm >= 9) && (cloud != null && cloud <= 20)) {
     return { main: 'Clear', description: 'clear' };
@@ -35,6 +148,12 @@ const normalizeCondition = (text, ctx = {}) => {
   else if (/(cloud)/i.test(description)) main = 'Clouds';
   else if (/(fog|mist|haze|smoke)/i.test(description)) main = 'Fog';
   else main = 'Clear';
+  
+  // Validate precipitation type against temperature
+  if (tempC !== undefined) {
+    return fixPrecipitationType(main, description, tempC);
+  }
+  
   return { main, description };
 };
 
@@ -68,28 +187,106 @@ const convertWeatherApiToWeatherData = async (data) => {
     sunset = convertUTCToTimestamp(sunData.sunset);
     solarNoon = convertUTCToTimestamp(sunData.solar_noon);
   } else {
-    const parseTime = (timeStr, date) => {
+    const parseTime = (timeStr, date, tzOffset = 0) => {
       try {
         const [time, period] = timeStr.split(' ');
         let [hours, minutes] = time.split(':').map(Number);
         if (period === 'PM' && hours !== 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
+        // Create UTC date and apply timezone offset
         const d = new Date(date);
-        d.setHours(hours, minutes, 0, 0);
-        return Math.floor(d.getTime() / 1000);
-      } catch { return Math.floor(Date.now() / 1000); }
+        const utcTime = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+        utcTime.setHours(hours, minutes, 0, 0);
+        return Math.floor(utcTime.getTime() / 1000);
+      } catch (e) {
+        console.warn('[weatherService] parseTime failed:', e);
+        return Math.floor(Date.now() / 1000);
+      }
     };
-    sunrise = parseTime(today.astro.sunrise, today.date);
-    sunset = parseTime(today.astro.sunset, today.date);
+    
+    const tzOffsetSeconds = typeof data.location.tz_id === 'number' ? data.location.tz_id : 0;
+    sunrise = parseTime(today.astro.sunrise, today.date, tzOffsetSeconds);
+    sunset = parseTime(today.astro.sunset, today.date, tzOffsetSeconds);
   }
-  const condNow = normalizeCondition(data.current.condition.text, { visKm: data.current.vis_km, cloud: data.current.cloud });
+  
+  // Validate sunrise and sunset times
+  const validateSunTimes = (sunriseTs, sunsetTs) => {
+    const sunriseDate = new Date(sunriseTs * 1000);
+    const sunsetDate = new Date(sunsetTs * 1000);
+    const sunriseHour = sunriseDate.getUTCHours();
+    const sunsetHour = sunsetDate.getUTCHours();
+    
+    let errors = [];
+    let fixedSunrise = sunriseTs;
+    let fixedSunset = sunsetTs;
+    
+    // Sunrise should be before noon (12:00)
+    if (sunriseHour >= 12) {
+      errors.push(`Sunrise time is ${sunriseHour}:${sunriseDate.getUTCMinutes()} (after noon). This is unusual.`);
+    }
+    
+    // Sunset should be after noon (12:00)
+    if (sunsetHour < 12) {
+      errors.push(`Sunset time is ${sunsetHour}:${sunsetDate.getUTCMinutes()} (before noon). This is unusual.`);
+    }
+    
+    // Swap if sunrise > sunset
+    if (fixedSunrise >= fixedSunset) {
+      errors.push('Sunrise time is later than sunset time. Swapping values.');
+      [fixedSunrise, fixedSunset] = [fixedSunset, fixedSunrise];
+    }
+    
+    // Validate day length (should be between 0-24 hours)
+    const dayLengthSeconds = fixedSunset - fixedSunrise;
+    const dayLengthHours = dayLengthSeconds / 3600;
+    if (dayLengthHours < 0 || dayLengthHours > 24) {
+      errors.push(`Day length is ${dayLengthHours.toFixed(2)} hours. This is invalid.`);
+    }
+    
+    if (errors.length > 0) {
+      addValidationError({
+        type: 'sun_times_error',
+        message: errors.join(' '),
+        severity: 'error'
+      });
+    }
+    
+    return { sunrise: fixedSunrise, sunset: fixedSunset, dayLength: dayLengthSeconds };
+  };
+  
+  const validated = validateSunTimes(sunrise, sunset);
+  sunrise = validated.sunrise;
+  sunset = validated.sunset;
+  
+  const condNow = normalizeCondition(data.current.condition.text, { 
+    visKm: data.current.vis_km, 
+    cloud: data.current.cloud,
+    temp: data.current.temp_c 
+  });
+  
+  // Validate and correct feels_like temperature
+  let feelsLike = data.current.feelslike_c;
+  const windSpeedKmh = data.current.wind_kph || 0;
+  const correctedWindChill = calculateWindChill(data.current.temp_c, windSpeedKmh);
+  
+  // If feels_like differs too much from calculated wind chill, use calculated value
+  if (Math.abs(feelsLike - correctedWindChill) > 8) {
+    console.warn('[weatherService] feels_like correction:', { 
+      api_feelsLike: feelsLike, 
+      calculated: correctedWindChill, 
+      temp: data.current.temp_c, 
+      wind_kmh: windSpeedKmh 
+    });
+    feelsLike = correctedWindChill;
+  }
+  
   return {
     name: data.location.name,
     sys: { country: data.location.country, sunrise, sunset, solar_noon: solarNoon, tz_id: data.location.tz_id },
     timezone: data.location.tz_id,
     main: {
       temp: data.current.temp_c,
-      feels_like: data.current.feelslike_c,
+      feels_like: feelsLike,
       temp_min: data.forecast.forecastday[0].day.mintemp_c,
       temp_max: data.forecast.forecastday[0].day.maxtemp_c,
       humidity: data.current.humidity,
@@ -101,7 +298,18 @@ const convertWeatherApiToWeatherData = async (data) => {
       icon: data.current.condition.icon,
     }],
     wind: { speed: data.current.wind_kph / 3.6, deg: data.current.wind_degree },
-    visibility: data.current.vis_km * 1000,
+    visibility: (() => {
+      let vis = data.current.vis_km * 1000; // convert to meters
+      // Validate visibility based on weather condition
+      if (condNow.main === 'Snow' && vis > 3000) {
+        // Heavy snow typically reduces visibility significantly
+        console.warn('[weatherService] visibility correction for snow:', { api: vis, corrected: 2000 });
+        vis = 2000; // typical range for snowfall
+      } else if (condNow.main === 'Rain' && vis > 5000) {
+        vis = 5000;
+      }
+      return vis;
+    })(),
     clouds: { all: data.current.cloud },
     coord: { lat: data.location.lat, lon: data.location.lon },
     uv: typeof data.current?.uv === 'number' ? data.current.uv : undefined,
@@ -516,6 +724,47 @@ export const getWeeklyForecast = async (lat, lon, units = 'metric') => {
 };
 
 /**
+ * Check if weather alerts and current conditions are consistent
+ * If alerts mention snow but current weather shows rain, adjust conditions
+ * EXPORTED for use in App.jsx after fetching both weather and alerts
+ */
+export const validateAlertConsistency = (currentWeather, alerts) => {
+  if (!Array.isArray(alerts) || alerts.length === 0) return currentWeather;
+  
+  // Check if any alert mentions snow/snowfall
+  const hasSnowAlert = alerts.some(alert => {
+    const text = `${alert.event || ''} ${alert.description || ''}`.toLowerCase();
+    return /snow|snowfall|blizzard|winter storm/i.test(text);
+  });
+  
+  // Check if any alert mentions rain
+  const hasRainAlert = alerts.some(alert => {
+    const text = `${alert.event || ''} ${alert.description || ''}`.toLowerCase();
+    return /rain|rainfall|downpour|precipitation/i.test(text);
+  });
+  
+  // If snow alert exists but current weather is Rain, change to Snow
+  if (hasSnowAlert && currentWeather.weather?.[0]?.main === 'Rain') {
+    addValidationError({
+      type: 'alert_weather_mismatch',
+      message: 'Weather alert indicates snowfall, but current conditions show rain. Updated current weather to Snow.',
+      severity: 'warning'
+    });
+    
+    return {
+      ...currentWeather,
+      weather: [{
+        ...currentWeather.weather[0],
+        main: 'Snow',
+        description: currentWeather.weather[0].description.replace(/rain/gi, 'snow')
+      }]
+    };
+  }
+  
+  return currentWeather;
+};
+
+/**
  * Get weather alerts
  * @param {number} lat - Latitude
  * @param {number} lon - Longitude
@@ -535,19 +784,126 @@ export const getWeatherAlerts = async (lat, lon) => {
     if (!data.alerts || !data.alerts.alert) {
       return [];
     }
+
+    const tzId = data?.location?.tz_id;
+
+    const getTimeZoneOffsetMs = (timeZone, utcMs) => {
+      if (!timeZone) return 0;
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone,
+          hour12: false,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }).formatToParts(new Date(utcMs));
+        const values = Object.fromEntries(parts.map(p => [p.type, p.value]));
+        const asUTC = Date.UTC(
+          Number(values.year),
+          Number(values.month) - 1,
+          Number(values.day),
+          Number(values.hour),
+          Number(values.minute),
+          Number(values.second)
+        );
+        return asUTC - utcMs;
+      } catch {
+        return 0;
+      }
+    };
+
+    const parseWeatherApiLocalTime = (value, timeZone) => {
+      if (value == null) return undefined;
+      if (typeof value === 'number') return value < 1e12 ? value : Math.floor(value / 1000);
+      if (value instanceof Date) return Math.floor(value.getTime() / 1000);
+      if (typeof value !== 'string') return undefined;
+
+      const isoParsed = Date.parse(value);
+      if (!isNaN(isoParsed) && (value.includes('T') || value.endsWith('Z'))) {
+        return Math.floor(isoParsed / 1000);
+      }
+
+      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+      if (!match) {
+        return !isNaN(isoParsed) ? Math.floor(isoParsed / 1000) : undefined;
+      }
+
+      const [, y, m, d, hh, mm, ss] = match;
+      const utcGuess = Date.UTC(
+        Number(y),
+        Number(m) - 1,
+        Number(d),
+        Number(hh),
+        Number(mm),
+        Number(ss || 0)
+      );
+      const offsetMs = getTimeZoneOffsetMs(timeZone, utcGuess);
+      return Math.floor((utcGuess - offsetMs) / 1000);
+    };
     
-    return data.alerts.alert.map((alert) => ({
-      sender_name: alert.headline || 'Weather Service',
-      event: alert.event || alert.headline,
-      start: new Date(alert.effective).getTime() / 1000,
-      end: new Date(alert.expires).getTime() / 1000,
-      description: alert.desc || alert.instruction,
-      tags: alert.areas ? alert.areas.split(';') : []
-    }));
+    const mapped = data.alerts.alert.map((alert) => {
+      const start = parseWeatherApiLocalTime(alert.effective, tzId);
+      const end = parseWeatherApiLocalTime(alert.expires, tzId);
+
+      if (!start || !end) {
+        console.warn('Invalid alert date format:', { effective: alert.effective, expires: alert.expires, tzId });
+      }
+
+      return {
+        sender_name: alert.headline || 'Weather Service',
+        event: alert.event || alert.headline,
+        start,
+        end,
+        description: alert.desc || alert.instruction,
+        tags: alert.areas ? alert.areas.split(';') : [],
+        severity: classifyAlertSeverity(alert.event || alert.headline, alert.desc || '')
+      };
+    });
+
+    // Critical: never return ended/upcoming duplicates; UI must show only active, unique phenomenon.
+    return normalizeAlertsForDisplay(mapped);
   } catch (error) {
     console.warn('Weather alerts service unavailable:', error);
     return [];
   }
+};
+
+/**
+ * Classify alert severity based on event type and description
+ * @param {string} event - Alert event name
+ * @param {string} description - Alert description
+ * @returns {'red' | 'yellow' | 'orange'} Alert severity level
+ */
+const classifyAlertSeverity = (event, description) => {
+  const text = `${event} ${description}`.toLowerCase();
+  
+  // Red level - most severe (immediate danger)
+  const redKeywords = [
+    'tornado', 'extreme', 'hurricane', 'typhoon', 'blizzard', 
+    'flash flood', 'severe thunderstorm', 'severe weather'
+  ];
+  if (redKeywords.some(kw => text.includes(kw))) return 'red';
+  
+  // Orange level - moderate to high severity
+  const orangeKeywords = [
+    'heavy snow', 'heavy rain', 'heavy wind', 'heavy freezing rain',
+    'ice storm', 'winter storm', 'frost warning', 'frost alert'
+  ];
+  if (orangeKeywords.some(kw => text.includes(kw))) return 'orange';
+  
+  // Yellow level - lower severity (advisory/watch)
+  const yellowKeywords = [
+    'snow', 'wind', 'fog', 'sleet', 'freezing', 'freeze',
+    'watch', 'advisory', 'caution', 'hazard', 'wet roads',
+    'poor visibility', 'slippery', 'drifting', 'blowing'
+  ];
+  if (yellowKeywords.some(kw => text.includes(kw))) return 'yellow';
+  
+  // Default to yellow for other alerts
+  return 'yellow';
 };
 
 /**
@@ -698,7 +1054,7 @@ export const getActivityForecast = async (lat, lon, units = 'metric') => {
 export const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported'));
+      reject(new Error('Geolocation is not supported by your browser'));
       return;
     }
 
@@ -710,7 +1066,23 @@ export const getCurrentLocation = () => {
         });
       },
       (error) => {
-        reject(new Error('Failed to get location'));
+        // Provide detailed error messages based on error code
+        let errorMessage;
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access denied. Please allow location permissions in your browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable. Please check your device settings.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out. Please try again.';
+            break;
+          default:
+            errorMessage = 'Failed to get location: ' + error.message;
+        }
+        console.error('[getCurrentLocation] Error:', errorMessage, error);
+        reject(new Error(errorMessage));
       },
       {
         enableHighAccuracy: true,
@@ -811,4 +1183,114 @@ export const formatTemperatureDisplay = (unit, value) => {
   const suffix = unit === 'fahrenheit' ? 'F' : 'C';
   const rounded = Math.round(Number(value));
   return `${rounded}°${suffix}`;
+};
+
+/**
+ * Validate warning/alert object structure and values
+ * @param {Object} warning - warning object to validate
+ * @returns {Object} { isValid: boolean, errors: string[] }
+ * 
+ * Expected structure:
+ * {
+ *   level: 'yellow' | 'orange' | 'red',
+ *   event: string,
+ *   description: string,
+ *   start?: number (Unix timestamp),
+ *   end?: number (Unix timestamp),
+ *   tags?: string[],
+ *   sender_name?: string
+ * }
+ */
+export const validateWarning = (warning) => {
+  const errors = [];
+
+  // Check if warning exists
+  if (!warning || typeof warning !== 'object') {
+    return { isValid: false, errors: ['Warning must be a valid object'] };
+  }
+
+  // Check level (required)
+  if (!warning.level) {
+    errors.push('Missing warning level');
+  } else if (!['yellow', 'orange', 'red'].includes(warning.level)) {
+    errors.push(`Invalid warning level: "${warning.level}". Expected one of: yellow, orange, red`);
+  }
+
+  // Check event (required)
+  if (!warning.event) {
+    errors.push('Missing event title');
+  } else if (typeof warning.event !== 'string' || warning.event.trim().length === 0) {
+    errors.push('Event must be a non-empty string');
+  }
+
+  // Check description (required)
+  if (!warning.description) {
+    errors.push('Missing description');
+  } else if (typeof warning.description !== 'string' || warning.description.trim().length === 0) {
+    errors.push('Description must be a non-empty string');
+  }
+
+  // Check timestamps (optional but must be valid if provided)
+  if (warning.start !== undefined && (typeof warning.start !== 'number' || warning.start <= 0)) {
+    errors.push('Start time must be a positive Unix timestamp');
+  }
+
+  if (warning.end !== undefined && (typeof warning.end !== 'number' || warning.end <= 0)) {
+    errors.push('End time must be a positive Unix timestamp');
+  }
+
+  // Check if start < end (if both provided)
+  if (
+    warning.start !== undefined &&
+    warning.end !== undefined &&
+    warning.start >= warning.end
+  ) {
+    errors.push('Start time must be before end time');
+  }
+
+  // Check tags (optional)
+  if (warning.tags !== undefined) {
+    if (!Array.isArray(warning.tags)) {
+      errors.push('Tags must be an array');
+    } else if (warning.tags.some((tag) => typeof tag !== 'string')) {
+      errors.push('All tags must be strings');
+    }
+  }
+
+  // Check sender_name (optional)
+  if (warning.sender_name !== undefined && typeof warning.sender_name !== 'string') {
+    errors.push('Sender name must be a string');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+/**
+ * Filter warnings by severity level
+ * @param {Array} warnings - array of warning objects
+ * @param {string | string[]} level - severity level(s) to filter by
+ * @returns {Array} filtered warnings
+ */
+export const filterWarningsBySeverity = (warnings, level) => {
+  if (!Array.isArray(warnings)) return [];
+  const levels = Array.isArray(level) ? level : [level];
+  return warnings.filter((w) => levels.includes(w.level));
+};
+
+/**
+ * Sort warnings by severity (red > orange > yellow)
+ * @param {Array} warnings - array of warning objects
+ * @returns {Array} sorted warnings
+ */
+export const sortWarningsBySeverity = (warnings) => {
+  if (!Array.isArray(warnings)) return [];
+  const severityOrder = { red: 0, orange: 1, yellow: 2 };
+  return [...warnings].sort((a, b) => {
+    const orderA = severityOrder[a.level] ?? 999;
+    const orderB = severityOrder[b.level] ?? 999;
+    return orderA - orderB;
+  });
 };

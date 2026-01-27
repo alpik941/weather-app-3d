@@ -83,6 +83,10 @@
  * @property {number} end
  * @property {string} description
  * @property {Array<string>} tags
+ * @property {('red'|'orange'|'yellow')} [severity='yellow'] Alert severity level
+ *   - 'red': Most severe (tornado, hurricane, extreme weather)
+ *   - 'orange': Moderate to high (heavy snow/rain/wind, ice storm)
+ *   - 'yellow': Lower severity (snow/wind advisory, fog warning)
  */
 
 /**

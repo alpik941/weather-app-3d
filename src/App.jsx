@@ -14,8 +14,9 @@ import ActivityForecast from './components/ActivityForecast';
 import WeatherMap from './components/WeatherMap';
 import SettingsPanel from './components/Settings/SettingsPanel';
 import AstronomyPanel from './components/AstronomyPanel';
-import { getWeatherData, getForecastData, getHourlyForecast, getWeeklyForecast, getWeatherAlerts, getActivityForecast, getCurrentLocation, getWeatherDataByCoords, getForecastDataByCoords, getAirQuality } from './services/weatherService';
+import { getWeatherData, getForecastData, getHourlyForecast, getWeeklyForecast, getWeatherAlerts, getActivityForecast, getCurrentLocation, getWeatherDataByCoords, getForecastDataByCoords, getAirQuality, getValidationErrors, clearValidationErrors, validateAlertConsistency } from './services/weatherService';
 import OnboardingOverlay from './components/Onboarding/OnboardingOverlay';
+import ValidationErrorModal from './components/ValidationErrorModal';
 import { putCache, getCache } from './utils/offlineCache';
 import { useTheme } from './contexts/ThemeContext';
 import { useTime } from './contexts/TimeContext';
@@ -25,6 +26,10 @@ function App() {
   const { theme, temperatureUnit, windSpeedUnit } = useTheme();
   const { t, language } = useLanguage();
   const { setTimezone, dayKey: ctxDayKey, timezone: appTimezone, formatTime, formatDate } = useTime();
+
+  // When we set `city` as a display label from geolocation, we don't want to
+  // immediately re-fetch by that string (it may include commas/state/country).
+  const skipNextCityFetchRef = React.useRef(false);
   
   const [weatherData, setWeatherData] = useState(null);
   const [forecastData, setForecastData] = useState(null);
@@ -33,6 +38,9 @@ function App() {
   const [activityData, setActivityData] = useState(null);
   const [airQuality, setAirQuality] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const [dismissedAlertsByLocation, setDismissedAlertsByLocation] = useState({});
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState('London');
   const [isNight, setIsNight] = useState(false);
@@ -47,30 +55,13 @@ function App() {
     try { return localStorage.getItem('weather-time-diag') === '1'; } catch { return false; }
   });
 
-  useEffect(() => {
-    fetchWeatherData(city);
-    // eslint-disable-next-line
-  }, [city, temperatureUnit]);
-
-  useEffect(() => {
-    if (weatherData) {
-      // Determine local hour at the forecast location using TimeContext (handles IANA tz or numeric offset)
-      try {
-        const hh = String(formatTime(Date.now(), { hour12: false })).split(':')[0];
-        const hour = parseInt(hh, 10);
-        if (!isNaN(hour)) setIsNight(hour < 6 || hour >= 18);
-      } catch {
-        const hour = new Date().getHours();
-        setIsNight(hour < 6 || hour >= 18);
-      }
-    }
-  }, [weatherData, appTimezone, formatTime]);
-
-  const fetchWeatherData = async (cityName) => {
+  const fetchWeatherData = React.useCallback(async (cityName) => {
     setLoading(true);
     setError(null);
     setOfflineUsed(false);
     setOfflineTs(null);
+    clearValidationErrors(); // Clear previous validation errors
+    
     try {
       const units = temperatureUnit === 'celsius' ? 'metric' : 'imperial';
       const [weather, forecast] = await Promise.all([
@@ -101,6 +92,19 @@ function App() {
         setActivityData(activities);
         setAirQuality(aqi);
 
+        // Validate alert consistency with current weather
+        const validatedWeather = validateAlertConsistency(weather, weatherAlerts);
+        if (validatedWeather !== weather) {
+          setWeatherData(validatedWeather);
+        }
+
+        // Check for validation errors after all data is fetched
+        const errors = getValidationErrors();
+        if (errors.length > 0) {
+          setValidationErrors(errors);
+          setShowValidationModal(true);
+        }
+
         // Cache the successful bundle snapshot per city for offline fallback
         try {
           const id = (cityName || '').toLowerCase();
@@ -116,6 +120,11 @@ function App() {
         if (cached && cached.payload) {
           const { weather, forecast, hourly, weekly, alerts: weatherAlerts, activities, airQuality: aqi } = cached.payload;
           setWeatherData(weather || null);
+          // Restore timezone from cached weather data
+          try {
+            const tzCandidate = weather?.sys?.tz_id ?? weather?.timezone;
+            if (tzCandidate !== undefined && tzCandidate !== null) setTimezone(tzCandidate);
+          } catch {}
           setForecastData(forecast || null);
           setHourlyData(hourly || null);
           setWeeklyData(weekly || null);
@@ -133,12 +142,36 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [temperatureUnit, setTimezone, t]);
 
-  const handleFindMe = async () => {
+  useEffect(() => {
+    if (skipNextCityFetchRef.current) {
+      skipNextCityFetchRef.current = false;
+      return;
+    }
+    fetchWeatherData(city);
+  }, [city, fetchWeatherData]);
+
+  useEffect(() => {
+    if (weatherData) {
+      // Determine local hour at the forecast location using TimeContext (handles IANA tz or numeric offset)
+      try {
+        const hh = String(formatTime(Date.now(), { hour12: false })).split(':')[0];
+        const hour = parseInt(hh, 10);
+        if (!isNaN(hour)) setIsNight(hour < 6 || hour >= 18);
+      } catch {
+        const hour = new Date().getHours();
+        setIsNight(hour < 6 || hour >= 18);
+      }
+    }
+  }, [weatherData, appTimezone, formatTime]);
+
+  const handleFindMe = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setOfflineUsed(false);
+      setOfflineTs(null);
       const location = await getCurrentLocation();
 
       // 1) Always fetch weather by coordinates for accuracy and timezone propagation
@@ -184,6 +217,11 @@ function App() {
           if (cached && cached.payload) {
             const p = cached.payload;
             setWeatherData(p.weather || null);
+            // Restore timezone from cached weather data
+            try {
+              const tzCandidate = p.weather?.sys?.tz_id ?? p.weather?.timezone;
+              if (tzCandidate !== undefined && tzCandidate !== null) setTimezone(tzCandidate);
+            } catch {}
             setForecastData(p.forecast || null);
             setHourlyData(p.hourly || null);
             setWeeklyData(p.weekly || null);
@@ -224,6 +262,7 @@ function App() {
 
       // Prefer reverse-geocoded label, else provider city name, else coordinates
       const label = displayName || weather?.name || `${location.lat.toFixed(3)}, ${location.lon.toFixed(3)}`;
+      skipNextCityFetchRef.current = true;
       setCity(label);
 
       // Also cache snapshot by label key for fetch-by-city offline fallback
@@ -240,13 +279,16 @@ function App() {
       } catch {}
     } catch (error) {
       console.error('Error getting location:', error);
-      alert(t('locationError') || 'Unable to get your location. Please check your browser permissions.');
+      // Show the detailed error message from getCurrentLocation
+      const errorMsg = error?.message || (t('locationError') || 'Unable to get your location. Please check your browser permissions.');
+      alert(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
-  };
+  }, [language, temperatureUnit, setTimezone, t]);
 
-  const getWeatherIcon = (condition) => {
+  const getWeatherIcon = React.useCallback((condition) => {
     const iconMap = {
       'clear': isNight ? <Moon className="w-8 h-8" /> : <Sun className="w-8 h-8" />,
       'clouds': <Cloud className="w-8 h-8" />,
@@ -256,9 +298,9 @@ function App() {
       'default': <Sun className="w-8 h-8" />
     };
     return iconMap[condition?.toLowerCase()] || iconMap['default'];
-  };
+  }, [isNight]);
 
-  const getBackgroundGradient = (condition) => {
+  const getBackgroundGradient = React.useCallback((condition) => {
     const hour = new Date().getHours();
     const isEarlyMorning = hour >= 5 && hour < 9;
     const isLateEvening = hour >= 18 && hour < 22;
@@ -324,7 +366,7 @@ function App() {
 
     const gradients = theme === 'dark' ? darkGradients : lightGradients;
     return gradients[condition?.toLowerCase()] || gradients['default'];
-  };
+  }, [theme]);
 
   // --- FIX: Card and font color for light theme ---
   // Add utility classes for light theme to ensure visibility
@@ -362,6 +404,26 @@ function App() {
     return Math.round(temp);
   };
 
+  const normalizeAlertType = (event) => {
+    const s = String(event || '')
+      .toLowerCase()
+      .replace(/\b(warning|watch|advisory|statement|alert)\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    return s || 'unknown';
+  };
+
+  const getAlertDismissKey = (alert) => {
+    const typeKey = normalizeAlertType(alert?.event);
+    const endKey = typeof alert?.end === 'number' ? alert.end : 'noend';
+    return `${typeKey}:${endKey}`;
+  };
+
+  const getAlertDismissExpiry = (alert, nowSeconds) => {
+    if (typeof alert?.end === 'number') return alert.end;
+    return nowSeconds + 6 * 60 * 60; // 6 hours fallback for alerts without end
+  };
+
   // Map wind degrees to 16-point cardinal
   const degToCardinal = (deg) => {
     if (typeof deg !== 'number' || isNaN(deg)) return '';
@@ -370,25 +432,42 @@ function App() {
     return dirs[idx] || 'N';
   };
 
-  const dismissAlert = (index) => {
-    setAlerts(prev => prev.filter((_, i) => i !== index));
+  const getLocationKey = () => {
+    // Use consistent location key: prefer weatherData.name, then city, then 'global'
+    return (weatherData?.name || city || 'global').toLowerCase().trim();
+  };
+
+  const dismissAlert = (alert) => {
+    const typeKey = normalizeAlertType(alert?.event);
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const locationKey = getLocationKey();
+
+    setDismissedAlertsByLocation((prev) => {
+      const next = { ...prev };
+      const current = next[locationKey] || {};
+      const dismissKey = getAlertDismissKey(alert);
+      current[dismissKey] = getAlertDismissExpiry(alert, nowSeconds);
+      next[locationKey] = current;
+      return next;
+    });
+
+    setAlerts(prev => prev.filter((a) => normalizeAlertType(a?.event) !== typeKey));
   };
 
   if (loading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${getBackgroundGradient('clear')} flex items-center justify-center transition-all duration-1000`}>
+      <div className="min-h-screen flex items-center justify-center transition-all duration-1000" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #14b8a6 100%)' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="glass-card p-8 rounded-2xl backdrop-blur-xl bg-white/20 border border-white/30"
+          className="glass-card p-8 rounded-2xl backdrop-blur-xl border border-white/30"
           style={{
-            background: 'rgba(255, 255, 255, 0.15)',
             backdropFilter: 'blur(15px)',
             WebkitBackdropFilter: 'blur(15px)',
           }}
         >
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/70 border-t-white mx-auto"></div>
-          <p className="text-gray-700 dark:text-white text-center mt-4 font-medium">{t('loading') || 'Loading weather data...'}</p>
+          <p className="text-white text-center mt-4 font-medium">{t('loading') || 'Loading weather data...'}</p>
         </motion.div>
       </div>
     );
@@ -406,8 +485,35 @@ function App() {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${getBackgroundGradient(weatherData?.weather?.[0]?.main || 'clear')} transition-all duration-1000`}>
+      {/* Validation Error Modal */}
+      <AnimatePresence>
+        {showValidationModal && (
+          <ValidationErrorModal
+            errors={validationErrors}
+            onClose={() => setShowValidationModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Weather Alerts */}
-      <WeatherAlerts alerts={alerts} onDismiss={dismissAlert} cardClass={cardBase} fontClass={cardTitle} />
+      {(() => {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const locationKey = getLocationKey();
+        const dismissed = dismissedAlertsByLocation[locationKey] || {};
+        const visibleAlerts = alerts.filter((alert) => {
+          const dismissKey = getAlertDismissKey(alert);
+          const until = dismissed[dismissKey];
+          return !(typeof until === 'number' && until > nowSeconds);
+        });
+        return (
+          <WeatherAlerts
+            alerts={visibleAlerts}
+            onDismiss={dismissAlert}
+            cardClass={cardBase}
+            fontClass={cardTitle}
+          />
+        );
+      })()}
 
       {/* Settings Panel */}
       <AnimatePresence>
@@ -464,9 +570,9 @@ function App() {
             <span className="mr-2">{t('offlineSnapshot') || 'Offline snapshot'}</span>
             {offlineTs && (
               <span>
-                {formatDate(Math.floor(offlineTs/1000), { opts: { month: 'short', day: 'numeric' } })}
+                {formatDate(Math.floor(offlineTs / 1000), { opts: { month: 'short', day: 'numeric' } })}
                 {', '}
-                {formatTime(Math.floor(offlineTs/1000))}
+                {formatTime(Math.floor(offlineTs / 1000))}
               </span>
             )}
           </div>
@@ -492,6 +598,7 @@ function App() {
           <div className="flex space-x-3">
             <button
               onClick={handleFindMe}
+              disabled={loading}
               className={`neuro-button p-4 micro-bounce interactive-glow ${theme === 'dark' ? 'bg-white/20 border-white/30 text-white' : 'bg-white/90 border-gray-200 text-gray-900'} hover:bg-white/70 transition-all duration-300`}
               title={t('findLocation') || 'Find My Location'}
               aria-label={t('findLocation') || 'Find My Location'}

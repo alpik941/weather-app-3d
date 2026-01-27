@@ -10,7 +10,7 @@ import { useTime } from '../contexts/TimeContext';
  *  - lat, lon
  *  - sunrise, sunset (Date or string) optional (if not passed shows placeholders)
  */
-export default function AstronomyPanel({ lat, lon, autoLocate=false, sunrise, sunset, timezone }) {
+const AstronomyPanel = React.memo(function AstronomyPanel({ lat, lon, autoLocate=false, sunrise, sunset, timezone }) {
   const ctx = useContext(LanguageContext);
   const tFn = ctx?.t || ((k) => k);
   const { formatTime } = useTime();
@@ -45,4 +45,6 @@ export default function AstronomyPanel({ lat, lon, autoLocate=false, sunrise, su
       </div>
     </div>
   );
-}
+});
+
+export default AstronomyPanel;
