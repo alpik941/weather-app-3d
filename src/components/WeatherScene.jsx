@@ -8,65 +8,7 @@ import CelestialMoon from './CelestialMoon';
 import { useTheme } from '../contexts/ThemeContext';
 import RealisticRainStreaks from './RealisticRainStreaks';
 import WeatherEffects from './WeatherEffects';
-
-// Realistic Snow Particles
-function SnowParticles({ intensity = 800 }) {
-  const ref = useRef(null);
-  
-  const particles = useMemo(() => {
-    const positions = new Float32Array(intensity * 3);
-    const velocities = new Float32Array(intensity * 3);
-    const sizes = new Float32Array(intensity);
-    
-    for (let i = 0; i < intensity; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 40;
-      positions[i * 3 + 1] = Math.random() * 40 + 10;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-      
-      velocities[i * 3] = (Math.random() - 0.5) * 0.1;
-      velocities[i * 3 + 1] = -Math.random() * 0.2 - 0.1;
-      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.05;
-      
-      sizes[i] = Math.random() * 0.3 + 0.1;
-    }
-    
-    return { positions, velocities, sizes };
-  }, [intensity]);
-
-  useFrame((state) => {
-    if (ref.current) {
-      const positions = ref.current.geometry.attributes.position.array;
-      const time = state.clock.elapsedTime;
-      
-      for (let i = 0; i < intensity; i++) {
-        positions[i * 3] += particles.velocities[i * 3] + Math.sin(time + i) * 0.01;
-        positions[i * 3 + 1] += particles.velocities[i * 3 + 1];
-        positions[i * 3 + 2] += particles.velocities[i * 3 + 2];
-        
-        if (positions[i * 3 + 1] < -10) {
-          positions[i * 3] = (Math.random() - 0.5) * 40;
-          positions[i * 3 + 1] = 40;
-          positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-        }
-      }
-      
-      ref.current.geometry.attributes.position.needsUpdate = true;
-    }
-  });
-
-  return (
-    <Points ref={ref} positions={particles.positions}>
-      <PointMaterial
-        transparent
-        size={0.2}
-        sizeAttenuation={true}
-        color="#FFFFFF"
-        opacity={0.9}
-        depthWrite={false}
-      />
-    </Points>
-  );
-}
+import RealisticSnowfall from './RealisticSnowfall';
 
 // Dynamic Clouds
 function DynamicClouds({ coverage = 0.5, isStormy = false }) {
@@ -377,7 +319,20 @@ export default function WeatherScene({
           <FogEffect color={0x0f1624} near={4} far={55} />
         </>
       )}
-      {isSnowing && <SnowParticles intensity={800} />}
+      {isSnowing && (
+        <RealisticSnowfall
+          count={temperature < -15 ? 900 : temperature < -5 ? 600 : 400}
+          intensity={temperature < -15 ? 1.5 : temperature < -5 ? 1.0 : 0.7}
+          windSpeed={Math.min(windSpeed / 50, 0.3)}
+          windDirection={Math.PI / 6}
+          enabled={true}
+          renderMode={temperature < -15 ? 'simple' : 'detailed'}
+          accumulation={temperature < -5}
+          snowflakeSize={0.15}
+          color="#ffffff"
+          area={{ x: 50, z: 50, height: 30 }}
+        />
+      )}
       {(isCloudy || isThunderstorm || isRaining) && (
         <DynamicClouds coverage={Math.max(cloudCoverage, isRaining ? 0.9 : 0.6)} isStormy={true} />
       )}
