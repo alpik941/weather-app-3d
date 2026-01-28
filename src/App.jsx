@@ -88,7 +88,17 @@ function App() {
         
         setHourlyData(hourly);
         setWeeklyData(weekly);
-        setAlerts(weatherAlerts);
+        
+        // DEMO: Add rainfall warning for Vancouver
+        const rainfallWarning = {
+          event: 'Rainfall Warning',
+          severity: 'orange',
+          description: 'A long episode of rain, at times heavy, is expected. Total rainfall amounts of 80 to 120 mm. Rain will become heavy this evening, with 40 to 60 mm expected by Thursday morning. Rain will ease Thursday morning, then intensify again Thursday evening with an additional 40 to 60 mm expected by Friday afternoon. Water will likely pool on roads and in low-lying areas.',
+          end: Math.floor(new Date('2026-01-29T21:06:00').getTime() / 1000), // ср 21:06
+          start: Math.floor(Date.now() / 1000)
+        };
+        setAlerts([rainfallWarning, ...weatherAlerts]);
+        
         setActivityData(activities);
         setAirQuality(aqi);
 
@@ -128,7 +138,17 @@ function App() {
           setForecastData(forecast || null);
           setHourlyData(hourly || null);
           setWeeklyData(weekly || null);
-          setAlerts(weatherAlerts || []);
+          
+          // DEMO: Add rainfall warning for Vancouver
+          const rainfallWarning = {
+            event: 'Rainfall Warning',
+            severity: 'orange',
+            description: 'A long episode of rain, at times heavy, is expected. Total rainfall amounts of 80 to 120 mm. Rain will become heavy this evening, with 40 to 60 mm expected by Thursday morning. Rain will ease Thursday morning, then intensify again Thursday evening with an additional 40 to 60 mm expected by Friday afternoon. Water will likely pool on roads and in low-lying areas.',
+            end: Math.floor(new Date('2026-01-29T21:06:00').getTime() / 1000), // ср 21:06
+            start: Math.floor(Date.now() / 1000)
+          };
+          setAlerts([rainfallWarning, ...(weatherAlerts || [])]);
+          
           setActivityData(activities || null);
           setAirQuality(aqi || null);
           setOfflineUsed(true);
@@ -199,7 +219,17 @@ function App() {
         ]);
         setHourlyData(hourly);
         setWeeklyData(weekly);
-        setAlerts(weatherAlerts);
+        
+        // DEMO: Add rainfall warning for Vancouver
+        const rainfallWarning = {
+          event: 'Rainfall Warning',
+          severity: 'orange',
+          description: 'A long episode of rain, at times heavy, is expected. Total rainfall amounts of 80 to 120 mm. Rain will become heavy this evening, with 40 to 60 mm expected by Thursday morning. Rain will ease Thursday morning, then intensify again Thursday evening with an additional 40 to 60 mm expected by Friday afternoon. Water will likely pool on roads and in low-lying areas.',
+          end: Math.floor(new Date('2026-01-29T21:06:00').getTime() / 1000), // ср 21:06
+          start: Math.floor(Date.now() / 1000)
+        };
+        setAlerts([rainfallWarning, ...weatherAlerts]);
+        
         setActivityData(activities);
         setAirQuality(aqi);
 
