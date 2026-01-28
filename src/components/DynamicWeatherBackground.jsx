@@ -105,7 +105,7 @@ export default function DynamicWeatherBackground({
           if (obj.position.y < -10) obj.position.y = 10;
         }
         if (obj.userData.isCloud) {
-          obj.position.x += 0.005;
+          obj.position.x += 0.001;
           if (obj.position.x > 10) obj.position.x = -10;
         }
       });
