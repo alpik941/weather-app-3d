@@ -270,8 +270,14 @@ export default function WeatherScene({
             </Sphere>
           </group>
         ) : (
-          <group position={[-15, 14, -20]} scale={[2, 2, 2]}>
-            <Moon lightTheme={theme === 'light'} />
+          <group position={[-15, 14, -20]}>
+            <Moon 
+              radius={2}
+              lightTheme={theme === 'light'} 
+              quality="high"
+              showGlow={true}
+              showAtmosphere={true}
+            />
           </group>
         )
       ) : (

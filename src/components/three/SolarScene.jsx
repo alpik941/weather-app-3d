@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Center, Bounds } from '@react-three/drei';
 import { shouldShowSun, shouldShowMoon, isDaytime } from '../../utils/weatherVisuals';
 import { useTheme } from '../../contexts/ThemeContext';
+import Moon from '../Moon'; // Единый Moon компонент
 
 // Utility: linear interpolate between two colors (hex strings) by t in [0,1]
 function lerpColor(a, b, t) {
@@ -77,92 +78,8 @@ function Sun({ temperature = 25 }) {
   );
 }
 
-function Moon({
-  colorMapUrl = '/textures/2k_moon.jpg',
-  bumpMapUrl = '/textures/2k_moon_bump.jpg',
-  lightTheme = false,
-}) {
-  const moonRef = useRef();
-  const [colorMap, setColorMap] = useState(null);
-  const [bumpMap, setBumpMap] = useState(null);
-
-  useEffect(() => {
-    const loader = new THREE.TextureLoader();
-    let mounted = true;
-    loader.load(
-      colorMapUrl,
-      (tex) => {
-        if (!mounted) return;
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        setColorMap(tex);
-      },
-      undefined,
-      () => setColorMap(null) // fallback if not found
-    );
-    loader.load(
-      bumpMapUrl,
-      (tex) => {
-        if (!mounted) return;
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        setBumpMap(tex);
-      },
-      undefined,
-      () => setBumpMap(null)
-    );
-    return () => {
-      mounted = false;
-    };
-  }, [colorMapUrl, bumpMapUrl]);
-
-  useFrame((_, delta) => {
-    if (moonRef.current) {
-      moonRef.current.rotation.y += delta * 0.1;
-    }
-  });
-
-  return (
-    <group>
-      <mesh ref={moonRef} castShadow receiveShadow>
-        <sphereGeometry args={[5, 64, 64]} />
-        {colorMap ? (
-          <meshStandardMaterial
-            map={colorMap}
-            bumpMap={bumpMap || undefined}
-            bumpScale={bumpMap ? 0.25 : 0}
-            roughness={0.9}
-            metalness={0.0}
-            emissive={lightTheme ? '#bfc5ff' : '#000000'}
-            emissiveIntensity={lightTheme ? 0.2 : 0}
-          />
-        ) : (
-          <meshStandardMaterial
-            color="#d0d0d0"
-            roughness={0.9}
-            metalness={0.0}
-            emissive={lightTheme ? '#bfc5ff' : '#000000'}
-            emissiveIntensity={lightTheme ? 0.2 : 0}
-          />
-        )}
-      </mesh>
-
-      {/* Subtle glow around the moon */}
-      <mesh scale={[1.12, 1.12, 1.12]}>
-        <sphereGeometry args={[5, 32, 32]} />
-        <meshBasicMaterial
-          color="#9fb3ff"
-          transparent
-          opacity={0.12}
-          blending={THREE.AdditiveBlending}
-          side={THREE.BackSide}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Cool point light to give the moon some rim lighting */}
-      <pointLight color="#9fb3ff" intensity={0.8} distance={60} decay={2} />
-    </group>
-  );
-}
+// Используем единый Moon компонент из Moon.jsx
+// Старая inline реализация удалена
 
 function isCurrentlyDay() {
   const h = new Date().getHours();
@@ -244,7 +161,13 @@ export default function SolarScene({ defaultTemperature = 25, isNight, weather, 
                 <Sun temperature={temp} />
               ) : null}
               {!isDay && shouldShowMoon({ currentMs: currentTime || Date.now(), sunriseMs: sunrise, sunsetMs: sunset, weather }) ? (
-                <Moon lightTheme={theme === 'light'} />
+                <Moon 
+                  radius={5} 
+                  lightTheme={theme === 'light'} 
+                  quality="high"
+                  showGlow={true}
+                  showAtmosphere={true}
+                />
               ) : null}
             </Center>
           </Bounds>

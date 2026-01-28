@@ -4,44 +4,56 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
- * Moon 3D object
+ * Unified Moon 3D component для всего проекта
+ * Используется в WeatherScene и SolarScene
+ * 
  * Improvements:
- * - Removed hardcoded /Public path (Vite serves from /)
- * - Graceful fallback if textures fail to load
- * - Configurable size & rotation speed
- * - Reduced default geometry segments for performance (still detailed)
- * - Optional glow & atmosphere toggles
+ * - Единая логика для всех сцен
+ * - Graceful fallback с множественными источниками текстур
+ * - Configurable size, rotation speed, quality
+ * - Optional glow & atmosphere
+ * - Light theme support (emissive boost для видимости)
  */
 export default function Moon({
   radius = 1,
-  rotationSpeed = 0.05, // degrees per second equivalent factor
+  rotationSpeed = 0.05,
   quality = "high", // 'low' | 'medium' | 'high'
   showGlow = true,
   showAtmosphere = true,
   lightTheme = false,
-  texturePath = "/textures/moon/Moon.jpg",
-  bumpPath = "/textures/moon/moon_bump.jpg",
-  specularPath = "/textures/moon/moon_specular.jpg"
+  // Основные пути текстур
+  colorMapUrl = '/textures/2k_moon.jpg',
+  bumpMapUrl = '/textures/2k_moon_bump.jpg',
+  // Legacy props для совместимости
+  texturePath,
+  bumpPath,
+  specularPath
 }) {
   const moonRef = useRef();
-  const [maps, setMaps] = useState({ color: null, bump: null, specular: null });
+  const [maps, setMaps] = useState({ color: null, bump: null });
 
-  // Segment resolution based on quality - increased for better bump visibility
-  const segments = quality === 'low' ? 64 : quality === 'medium' ? 96 : 128;
+  // Используем новые или legacy prop names
+  const finalColorPath = colorMapUrl || texturePath || '/textures/2k_moon.jpg';
+  const finalBumpPath = bumpMapUrl || bumpPath || '/textures/2k_moon_bump.jpg';
+
+  // Segment resolution based on quality
+  const segments = quality === 'low' ? 48 : quality === 'medium' ? 64 : 96;
 
   useEffect(() => {
     let mounted = true;
     const loader = new THREE.TextureLoader();
 
-    // Fallback texture sources
-    const textureSources = [
-      texturePath,
+    // Множественные fallback источники текстур
+    const colorSources = [
+      finalColorPath,
+      '/textures/moon/Moon.jpg',
       'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
       '/textures/2k_moon.jpg'
     ];
 
     const bumpSources = [
-      bumpPath,
+      finalBumpPath,
+      '/textures/moon/moon_bump.jpg',
       '/textures/2k_moon_bump.jpg',
       'https://s3-us-west-2.amazonaws.com/s.cdpn.io/17271/lroc_color_poles_1k.jpg'
     ];
@@ -50,7 +62,7 @@ export default function Moon({
       let currentIndex = 0;
       const tryLoad = () => {
         if (currentIndex >= sources.length) {
-          console.warn(`Failed to load ${type} from all sources`);
+          console.warn(`Moon: Failed to load ${type} from all sources`);
           return;
         }
         loader.load(
@@ -58,6 +70,7 @@ export default function Moon({
           (tex) => {
             if (!mounted) return;
             // Enhance texture quality
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.anisotropy = 16;
             tex.minFilter = THREE.LinearMipMapLinearFilter;
             tex.magFilter = THREE.LinearFilter;
@@ -73,65 +86,76 @@ export default function Moon({
       tryLoad();
     };
 
-    loadWithFallback(textureSources, (color) => setMaps(prev => ({ ...prev, color })), 'color map');
+    loadWithFallback(colorSources, (color) => setMaps(prev => ({ ...prev, color })), 'color map');
     loadWithFallback(bumpSources, (bump) => setMaps(prev => ({ ...prev, bump })), 'bump map');
 
     return () => { mounted = false; };
-  }, [texturePath, bumpPath, specularPath]);
+  }, [finalColorPath, finalBumpPath]);
 
   // Smooth rotation
   useFrame((_, delta) => {
     if (moonRef.current) {
-      moonRef.current.rotation.y += rotationSpeed * 0.001 * delta * 60; // normalize for fps
+      moonRef.current.rotation.y += rotationSpeed * 0.001 * delta * 60;
     }
   });
 
+  // Unified material properties для обеих тем
   const materialProps = useMemo(() => ({
     map: maps.color || null,
     bumpMap: maps.bump || null,
-    bumpScale: maps.bump ? 0.35 : 0, // Increased for visible relief
-    normalMap: maps.bump || null,
-    normalScale: maps.bump ? [0.8, 0.8] : [0, 0],
-    roughness: lightTheme ? 0.9 : 0.95,
+    bumpScale: maps.bump ? 0.3 : 0,
+    roughness: lightTheme ? 0.85 : 0.95,
     metalness: 0.0,
-    emissive: lightTheme ? "#8a8a82" : "#1a1a1a",
-    emissiveIntensity: lightTheme ? 0.4 : 0.08,
-    color: lightTheme ? "#a0a099" : "#ffffff",
+    // Light theme: увеличиваем emissive для видимости на светлом фоне
+    emissive: lightTheme ? "#9fb3ff" : "#1a1a1a",
+    emissiveIntensity: lightTheme ? 0.25 : 0.05,
+    color: maps.color ? "#ffffff" : (lightTheme ? "#a0a099" : "#d0d0d0"),
   }), [maps, lightTheme]);
 
   return (
-    <>
-      <mesh ref={moonRef}>
+    <group>
+      {/* Main moon mesh */}
+      <mesh ref={moonRef} castShadow receiveShadow>
         <sphereGeometry args={[radius, segments, segments]} />
         <meshStandardMaterial {...materialProps} />
       </mesh>
 
+      {/* Subtle glow around the moon */}
       {showGlow && (
-        <mesh>
-          <sphereGeometry args={[radius * 1.03, 48, 48]} />
+        <mesh scale={[1.12, 1.12, 1.12]}>
+          <sphereGeometry args={[radius, 32, 32]} />
           <meshBasicMaterial
-            color={lightTheme ? "#9a9a92" : "white"}
+            color="#9fb3ff"
             transparent
-            opacity={lightTheme ? 0.12 : 0.04}
-            side={THREE.BackSide}
+            opacity={lightTheme ? 0.15 : 0.12}
             blending={THREE.AdditiveBlending}
+            side={THREE.BackSide}
             depthWrite={false}
           />
         </mesh>
       )}
 
+      {/* Optional atmosphere */}
       {showAtmosphere && (
-        <mesh scale={[1.1, 1.1, 1.1]}>
+        <mesh scale={[1.08, 1.08, 1.08]}>
           <sphereGeometry args={[radius, 32, 32]} />
           <meshBasicMaterial
             color={lightTheme ? "#7d7d7a" : "#4a5a7a"}
             transparent
-            opacity={lightTheme ? 0.06 : 0.025}
+            opacity={lightTheme ? 0.08 : 0.04}
             side={THREE.BackSide}
             depthWrite={false}
           />
         </mesh>
       )}
-    </>
+
+      {/* Cool point light to give the moon rim lighting */}
+      <pointLight 
+        color="#9fb3ff" 
+        intensity={0.8} 
+        distance={radius * 12} 
+        decay={2} 
+      />
+    </group>
   );
 }
