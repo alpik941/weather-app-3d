@@ -6,169 +6,8 @@ import Moon from './Moon';
 import CelestialSun from './CelestialSun';
 import CelestialMoon from './CelestialMoon';
 import { useTheme } from '../contexts/ThemeContext';
-
-// Improved rain streaks with splashes and better physics
-function RainStreaks({ count = 1400, area = 60, wind = 0.35 }) {
-  const meshRef = useRef(null);
-  const splashesRef = useRef(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  const splashDummy = useMemo(() => new THREE.Object3D(), []);
-
-  // Rain configuration
-  const splashCount = Math.floor(count * 0.2); // 20% of raindrops can create splashes
-
-  const { offsets, speeds, lengths } = useMemo(() => {
-    const offsets = new Float32Array(count * 3);
-    const speeds = new Float32Array(count);
-    const lengths = new Float32Array(count);
-
-    for (let i = 0; i < count; i++) {
-      offsets[i * 3] = (Math.random() - 0.5) * area;
-      offsets[i * 3 + 1] = Math.random() * area * 0.8 + 10;
-      offsets[i * 3 + 2] = (Math.random() - 0.5) * area;
-
-      speeds[i] = 0.8 + Math.random() * 0.6; // varied fall speed
-      lengths[i] = 0.6 + Math.random() * 0.7; // varied streak length
-    }
-
-    return { offsets, speeds, lengths };
-  }, [count, area]);
-
-  // Splash particles
-  const splashData = useMemo(() => {
-    const positions = new Float32Array(splashCount * 3);
-    const velocities = new Float32Array(splashCount * 3);
-    const lifetimes = new Float32Array(splashCount);
-    const maxLifetimes = new Float32Array(splashCount);
-
-    for (let i = 0; i < splashCount; i++) {
-      positions[i * 3] = 0;
-      positions[i * 3 + 1] = -100; // Start hidden
-      positions[i * 3 + 2] = 0;
-
-      velocities[i * 3] = 0;
-      velocities[i * 3 + 1] = 0;
-      velocities[i * 3 + 2] = 0;
-
-      lifetimes[i] = 0;
-      maxLifetimes[i] = 0.3 + Math.random() * 0.3;
-    }
-
-    return { positions, velocities, lifetimes, maxLifetimes };
-  }, [splashCount]);
-
-  useFrame((_, delta) => {
-    const m = meshRef.current;
-    const s = splashesRef.current;
-    if (!m || !s) return;
-
-    // Update raindrops
-    for (let i = 0; i < count; i++) {
-      // Update Y position
-      offsets[i * 3 + 1] -= speeds[i] * (delta * 60);
-      offsets[i * 3] += wind * 0.02; // slight wind drift
-
-      // Reset raindrop when it hits ground and create splash
-      if (offsets[i * 3 + 1] < -10) {
-        // Find free splash slot
-        if (i < splashCount) {
-          const idx = i % splashCount;
-          if (splashData.lifetimes[idx] <= 0) {
-            splashData.positions[idx * 3] = offsets[i * 3];
-            splashData.positions[idx * 3 + 1] = -9.8;
-            splashData.positions[idx * 3 + 2] = offsets[i * 3 + 2];
-            
-            splashData.velocities[idx * 3] = (Math.random() - 0.5) * 0.8;
-            splashData.velocities[idx * 3 + 1] = Math.random() * 1.5 + 1.0;
-            splashData.velocities[idx * 3 + 2] = (Math.random() - 0.5) * 0.8;
-            
-            splashData.lifetimes[idx] = splashData.maxLifetimes[idx];
-          }
-        }
-
-        offsets[i * 3] = (Math.random() - 0.5) * area;
-        offsets[i * 3 + 1] = Math.random() * area * 0.5 + 20;
-        offsets[i * 3 + 2] = (Math.random() - 0.5) * area;
-      }
-
-      dummy.position.set(
-        offsets[i * 3],
-        offsets[i * 3 + 1],
-        offsets[i * 3 + 2]
-      );
-      dummy.rotation.set(-Math.PI / 2 + 0.05, 0, wind * 0.08); // slight tilt
-      dummy.scale.set(0.04, lengths[i], 0.04);
-      dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
-    }
-    m.instanceMatrix.needsUpdate = true;
-
-    // Update splashes
-    for (let i = 0; i < splashCount; i++) {
-      if (splashData.lifetimes[i] > 0) {
-        // Physics
-        splashData.positions[i * 3] += splashData.velocities[i * 3] * delta * 60;
-        splashData.positions[i * 3 + 1] += splashData.velocities[i * 3 + 1] * delta * 60;
-        splashData.positions[i * 3 + 2] += splashData.velocities[i * 3 + 2] * delta * 60;
-
-        // Gravity
-        splashData.velocities[i * 3 + 1] -= 3.0 * delta * 60;
-
-        // Lifetime
-        splashData.lifetimes[i] -= delta;
-
-        const opacity = splashData.lifetimes[i] / splashData.maxLifetimes[i];
-        const scale = 0.03 * opacity;
-
-        splashDummy.position.set(
-          splashData.positions[i * 3],
-          splashData.positions[i * 3 + 1],
-          splashData.positions[i * 3 + 2]
-        );
-        splashDummy.scale.set(scale, scale, scale);
-        splashDummy.updateMatrix();
-        s.setMatrixAt(i, splashDummy.matrix);
-      } else {
-        // Hide dead splashes
-        splashDummy.position.set(0, -100, 0);
-        splashDummy.scale.set(0, 0, 0);
-        splashDummy.updateMatrix();
-        s.setMatrixAt(i, splashDummy.matrix);
-      }
-    }
-    s.instanceMatrix.needsUpdate = true;
-  });
-
-  return (
-    <>
-      {/* Raindrops */}
-      <instancedMesh ref={meshRef} args={[null, null, count]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial
-          color="#8fb3ff"
-          transparent
-          opacity={0.55}
-          roughness={0.8}
-          metalness={0}
-          depthWrite={false}
-        />
-      </instancedMesh>
-
-      {/* Splashes */}
-      <instancedMesh ref={splashesRef} args={[null, null, splashCount]}>
-        <sphereGeometry args={[1, 4, 4]} />
-        <meshStandardMaterial
-          color="#aec2e0"
-          transparent
-          opacity={0.7}
-          roughness={0.6}
-          metalness={0.1}
-          depthWrite={false}
-        />
-      </instancedMesh>
-    </>
-  );
-}
+import RealisticRainStreaks from './RealisticRainStreaks';
+import WeatherEffects from './WeatherEffects';
 
 // Realistic Snow Particles
 function SnowParticles({ intensity = 800 }) {
@@ -517,7 +356,24 @@ export default function WeatherScene({
       {/* Weather Effects */}
       {isRaining && (
         <>
-          <RainStreaks count={isThunderstorm ? 2000 : 1400} area={70} wind={Math.min(windSpeed / 20, 0.6)} />
+          <RealisticRainStreaks
+            count={isThunderstorm ? 1200 : 800}
+            intensity={isThunderstorm ? 2.0 : 1.2}
+            windSpeed={Math.min(windSpeed / 15, 0.6)}
+            windDirection={Math.PI / 4}
+            enabled={true}
+            splashEnabled={!isThunderstorm || windSpeed < 25}
+            color="#b8d4f0"
+            area={{ x: 40, z: 40, height: 25 }}
+          />
+          <WeatherEffects
+            fogEnabled={true}
+            fogOpacity={isThunderstorm ? 0.2 : 0.12}
+            lightningEnabled={isThunderstorm}
+            lightningFrequency={0.025}
+            cloudsEnabled={false}
+            puddlesEnabled={false}
+          />
           <FogEffect color={0x0f1624} near={4} far={55} />
         </>
       )}
