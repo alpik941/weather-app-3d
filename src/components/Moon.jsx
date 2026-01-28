@@ -100,17 +100,22 @@ export default function Moon({
   });
 
   // Unified material properties для обеих тем
-  const materialProps = useMemo(() => ({
-    map: maps.color || null,
-    bumpMap: maps.bump || null,
-    bumpScale: maps.bump ? 0.3 : 0,
-    roughness: lightTheme ? 0.85 : 0.95,
-    metalness: 0.0,
-    // Light theme: увеличиваем emissive для видимости на светлом фоне
-    emissive: lightTheme ? "#9fb3ff" : "#1a1a1a",
-    emissiveIntensity: lightTheme ? 0.25 : 0.05,
-    color: maps.color ? "#ffffff" : (lightTheme ? "#a0a099" : "#d0d0d0"),
-  }), [maps, lightTheme]);
+  const materialProps = useMemo(() => {
+    const hasTexture = maps.color != null;
+    
+    return {
+      map: maps.color || null,
+      bumpMap: maps.bump || null,
+      bumpScale: maps.bump ? 0.3 : 0,
+      roughness: lightTheme ? 0.7 : 0.9,
+      metalness: 0.05,
+      // Light theme: значительно увеличиваем emissive для видимости
+      emissive: lightTheme ? (hasTexture ? "#8899cc" : "#6677aa") : "#1a1a1a",
+      emissiveIntensity: lightTheme ? (hasTexture ? 0.4 : 0.6) : 0.05,
+      // Если текстура не загрузилась - используем более светлый цвет
+      color: hasTexture ? "#ffffff" : (lightTheme ? "#c8c8d0" : "#d5d5d5"),
+    };
+  }, [maps, lightTheme]);
 
   return (
     <group>
@@ -122,12 +127,12 @@ export default function Moon({
 
       {/* Subtle glow around the moon */}
       {showGlow && (
-        <mesh scale={[1.12, 1.12, 1.12]}>
+        <mesh scale={[1.15, 1.15, 1.15]}>
           <sphereGeometry args={[radius, 32, 32]} />
           <meshBasicMaterial
-            color="#9fb3ff"
+            color={lightTheme ? "#a0b0ff" : "#9fb3ff"}
             transparent
-            opacity={lightTheme ? 0.15 : 0.12}
+            opacity={lightTheme ? 0.25 : 0.15}
             blending={THREE.AdditiveBlending}
             side={THREE.BackSide}
             depthWrite={false}
@@ -151,8 +156,8 @@ export default function Moon({
 
       {/* Cool point light to give the moon rim lighting */}
       <pointLight 
-        color="#9fb3ff" 
-        intensity={0.8} 
+        color={lightTheme ? "#b0c0ff" : "#9fb3ff"}
+        intensity={lightTheme ? 1.2 : 0.8}
         distance={radius * 12} 
         decay={2} 
       />
