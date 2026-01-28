@@ -15,6 +15,7 @@ import * as THREE from 'three';
  * - Система брызг
  * - Эффект ветра
  */
+
 const RealisticRainStreaks = ({ 
   count = 800,
   intensity = 1.0,
@@ -86,31 +87,31 @@ const RealisticRainStreaks = ({
     
     // Вершины для тонкой вытянутой капли
     const vertices = new Float32Array([
-     Улучшенный материал с правильной прозрачностью
-  const dropletMaterial = useMemo(() => {
-    return new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(color),
-      transparent: true,
-      opacity: 0.65,
-      transmission: 0.92,
-      thickness: 0.2,
-      roughness: 0.08,
-      metalness: 0,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.15,
-      envMapIntensity: 1.8
+      // Верх (острый)
+      0, 0, 0,
+      // Средние точки (расширение)
+      -0.006, -0.3, 0,
+      0.006, -0.3, 0,
+      0, -0.3, -0.006,
+      0, -0.3, 0.006,
+      // Низ (расширенный)
+      -0.01, -0.8, 0,
+      0.01, -0.8, 0,
+      0, -0.8, -0.01,
+      0, -0.8, 0.01,
+      // Самый низ (точка)
       0, -1, 0,
     ]);
     
     const indices = [
       // Верхняя часть
       0, 1, 2,
-      0, 2, 3,18, 4, 4), []);
-  const splashMaterial = useMemo(() => {
-    return new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color).multiplyScalar(1.15),
-      transparent: true,
-      opacity: 0.757, 3,
+      0, 2, 3,
+      0, 3, 4,
+      0, 4, 1,
+      // Средняя часть
+      1, 5, 6, 1, 6, 2,
+      2, 6, 7, 2, 7, 3,
       3, 7, 8, 3, 8, 4,
       4, 8, 5, 4, 5, 1,
       // Нижняя часть (к точке)
@@ -127,31 +128,31 @@ const RealisticRainStreaks = ({
     return geometry;
   }, []);
 
-  // Материал с реалистичной прозрачностью
+  // Улучшенный материал с правильной прозрачностью
   const dropletMaterial = useMemo(() => {
     return new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(color),
       transparent: true,
-      opacity: 0.6,
-      transmission: 0.95, // Высокая прозрачность
-      thickness: 0.3,
-      roughness: 0.05,
+      opacity: 0.65,
+      transmission: 0.92,
+      thickness: 0.2,
+      roughness: 0.08,
       metalness: 0,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
-      envMapIntensity: 2.0,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.15,
+      envMapIntensity: 1.8,
       side: THREE.DoubleSide,
       depthWrite: true,
     });
   }, [color]);
 
   // Геометрия и материал для брызг
-  const splashGeometry = useMemo(() => new THREE.SphereGeometry(0.02, 4, 4), []);
+  const splashGeometry = useMemo(() => new THREE.SphereGeometry(0.018, 4, 4), []);
   const splashMaterial = useMemo(() => {
     return new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color).multiplyScalar(1.2),
+      color: new THREE.Color(color).multiplyScalar(1.15),
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.75,
       depthWrite: false,
     });
   }, [color]);
@@ -253,8 +254,6 @@ const RealisticRainStreaks = ({
         if (splash.life < splash.maxLife) {
           splash.life += delta;
           
-          // Физика брызг
-          splash.x += splash.vx * delta;
           splash.x += splash.vx * delta;
           splash.y += splash.vy * delta;
           splash.z += splash.vz * delta;
@@ -269,7 +268,9 @@ const RealisticRainStreaks = ({
           dummy.updateMatrix();
           
           splashRef.current.setMatrixAt(i, dummy.matrix);
-        } else {.001);
+        } else {
+          dummy.position.set(0, -1000, 0);
+          dummy.scale.set(0.001, 0.001, 0.001);
           dummy.updateMatrix();
           splashRef.current.setMatrixAt(i, dummy.matrix);
         }
