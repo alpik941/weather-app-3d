@@ -12,16 +12,7 @@
 - ✅ Эффект ветра
 - ✅ Оптимизация: Points/Sprites/InstancedMesh
 
-### 2. **WeatherSnowScene.jsx** - Готовая сцена
-Полноценная Canvas сцена с:
-- Снег + зимнее освещение + туман
-- Автоматический выбор режима производительности
-- Адаптация под температуру
-
-### 3. **CompleteSnowScene.jsx** - Полная сцена с пресетами
-- 🌨️ 4 готовых пресета
-- ⚙️ UI панель управления
-- 📊 Статистика
+### 2. (удалено) Готовые демо-сцены
 
 ---
 
@@ -65,19 +56,7 @@ import RealisticSnowfall from './RealisticSnowfall';
 
 ## 🚀 Вариант 2: Автономная сцена
 
-```javascript
-// В App.jsx или где используется WeatherScene
-
-import WeatherSnowScene from './WeatherSnowScene';
-
-<WeatherSnowScene
-  snowCount={600}
-  snowIntensity={1.0}
-  windSpeed={0.15}
-  temperature={-5}
-  snowAccumulation={true}
-/>
-```
+Готовая сцена была удалена как демо. Используй текущий WeatherScene и RealisticSnowfall.
 
 ---
 

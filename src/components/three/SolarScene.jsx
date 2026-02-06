@@ -49,7 +49,7 @@ function Sun({ temperature = 25 }) {
     <group>
       {/* Core sun */}
       <mesh ref={sunRef} castShadow receiveShadow>
-        <sphereGeometry args={[5, 64, 64]} />
+        <sphereGeometry args={[2, 64, 64]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -61,7 +61,7 @@ function Sun({ temperature = 25 }) {
 
       {/* Simple halo using additive blending on a slightly larger back-sided sphere */}
       <mesh ref={haloRef} scale={[1.3, 1.3, 1.3]}>
-        <sphereGeometry args={[5, 32, 32]} />
+        <sphereGeometry args={[2, 32, 32]} />
         <meshBasicMaterial
           color={color}
           transparent
@@ -162,7 +162,7 @@ export default function SolarScene({ defaultTemperature = 25, isNight, weather, 
               ) : null}
               {!isDay && shouldShowMoon({ currentMs: currentTime || Date.now(), sunriseMs: sunrise, sunsetMs: sunset, weather }) ? (
                 <Moon 
-                  radius={5} 
+                  radius={1.5} 
                   lightTheme={theme === 'light'} 
                   quality="high"
                   showGlow={true}

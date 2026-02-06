@@ -11,11 +11,7 @@
 - ✅ Эффектом ветра с настраиваемым направлением
 - ✅ Frustum culling для производительности
 
-### 2. **WeatherRainScene.jsx** - Готовая сцена с настройками
-Полноценная Canvas сцена включающая:
-- Дождь + освещение + туман + окружение
-- Простые props для управления всеми параметрами
-- Готова к использованию "из коробки"
+### 2. (удалено) Готовая сцена с настройками
 
 ---
 
@@ -56,27 +52,9 @@ import RealisticRainStreaks from './RealisticRainStreaks';
 
 ---
 
-## 🚀 Вариант 2: Автономная сцена (замена WeatherScene)
+## 🚀 Вариант 2: Автономная сцена
 
-### Использование готовой сцены:
-```javascript
-// В App.jsx или где используется WeatherScene
-
-// БЫЛО:
-// import WeatherScene from './WeatherScene';
-
-// СТАЛО:
-import WeatherRainScene from './WeatherRainScene';
-
-// В JSX:
-<WeatherRainScene
-  rainCount={800}
-  rainIntensity={1.5}
-  windSpeed={0.5}
-  fogEnabled={true}
-  showControls={false}  // true для отладки
-/>
-```
+Готовая сцена была удалена как демо. Используй текущий WeatherScene и RealisticRainStreaks.
 
 ---
 
@@ -162,10 +140,7 @@ area={{
 ## 🐛 Проверка и отладка
 
 ### 1. Включи OrbitControls для просмотра:
-```javascript
-// В WeatherRainScene.jsx
-<WeatherRainScene showControls={true} />
-```
+Используй текущий WeatherScene и добавь OrbitControls туда, если нужно для отладки.
 
 ### 2. Проверь производительность:
 ```javascript

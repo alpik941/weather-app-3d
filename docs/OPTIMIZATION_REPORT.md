@@ -34,7 +34,6 @@
 ### 2. Очистка кода
 
 #### Удалены console.log из production кода
-- ✅ `WelcomeModal.jsx` - убраны 3 лога инициализации
 - ✅ `TimeContext.jsx` - удален diagnostic лог
 
 #### Удалены временные/backup файлы

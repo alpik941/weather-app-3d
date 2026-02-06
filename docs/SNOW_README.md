@@ -49,8 +49,6 @@
 ```
 📁 RealisticSnow3D/
 ├── 📄 RealisticSnowfall.jsx         # Основной компонент
-├── 📄 WeatherSnowScene.jsx          # Готовая сцена
-├── 📄 CompleteSnowScene.jsx         # Полная сцена с пресетами
 ├── 📄 SNOW_INTEGRATION_GUIDE.md     # Подробное руководство
 └── 📄 README.md                     # Этот файл
 ```
@@ -76,35 +74,7 @@ import RealisticSnowfall from './RealisticSnowfall';
 
 ### 2️⃣ Готовая сцена
 
-```jsx
-import WeatherSnowScene from './WeatherSnowScene';
-
-function App() {
-  return (
-    <WeatherSnowScene
-      snowCount={600}
-      snowIntensity={1.0}
-      temperature={-5}
-      snowAccumulation={true}
-    />
-  );
-}
-```
-
-### 3️⃣ Полная сцена с пресетами
-
-```jsx
-import CompleteSnowScene from './CompleteSnowScene';
-
-function App() {
-  return (
-    <CompleteSnowScene 
-      preset="moderate-snow"  // 'light-snow' | 'moderate-snow' | 'heavy-snow' | 'blizzard'
-      showStats={false}
-    />
-  );
-}
-```
+Готовые демо-сцены удалены. Используй текущий WeatherScene и RealisticSnowfall.
 
 ---
 

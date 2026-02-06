@@ -1,19 +1,22 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Points, PointMaterial, Sphere, Cloud, Sky, Stars } from '@react-three/drei';
+import { Points, PointMaterial, Cloud } from '@react-three/drei';
 import * as THREE from 'three';
-import Moon from './Moon';
 import CelestialSun from './CelestialSun';
 import CelestialMoon from './CelestialMoon';
 import { useTheme } from '../contexts/ThemeContext';
-import RealisticRainStreaks from './RealisticRainStreaks';
-import WeatherEffects from './WeatherEffects';
-import RealisticSnowfall from './RealisticSnowfall';
+import LightingSection from './scene/LightingSection';
+import SkySection from './scene/SkySection';
+import CelestialBodiesSection from './scene/CelestialBodiesSection';
+import WeatherEffectsSection from './scene/WeatherEffectsSection';
 
 // Dynamic Clouds
-function DynamicClouds({ coverage = 0.5, isStormy = false }) {
+function DynamicClouds({ coverage = 0.5, isStormy = false, opacity }) {
   const groupRef = useRef(null);
   const cloudCount = Math.floor(coverage * 8) + 2;
+  
+  // Use custom opacity or default based on storm status
+  const cloudOpacity = opacity !== undefined ? opacity : (isStormy ? 0.8 : 0.4);
 
   useFrame((state) => {
     if (groupRef.current) {
@@ -36,7 +39,7 @@ function DynamicClouds({ coverage = 0.5, isStormy = false }) {
             (Math.random() - 0.5) * 30
           ]}
           scale={Math.random() * 2 + 1}
-          opacity={isStormy ? 0.8 : 0.4}
+          opacity={cloudOpacity}
           color={isStormy ? "#7fa4d2" : "#cfe7ff"}
           speed={0.1}
         />
@@ -85,38 +88,6 @@ function FogEffect({ color = 0x0f1624, near = 5, far = 60 }) {
 
   return null;
 }
-
-// Sun/Moon
-function Sun({ temperature, isVisible = true }) {
-  const ref = useRef(null);
-  
-  useFrame((state) => {
-    if (ref.current && isVisible) {
-      ref.current.rotation.y = state.clock.elapsedTime * 0.1;
-    }
-  });
-
-  const sunColor = temperature > 30 ? "#FF6B35" : temperature > 20 ? "#FFD700" : "#FFA500";
-  
-  if (!isVisible) return null;
-  
-  return (
-    <Sphere 
-      ref={ref}
-      args={[2, 64, 64]}  // Увеличил детализацию
-      position={[15, 15, -20]}
-    >
-      <meshStandardMaterial 
-        color={sunColor}
-        emissive={sunColor}
-        emissiveIntensity={0.5} // Увеличил интенсивность
-        roughness={0.1}
-        metalness={0.1}
-      />
-    </Sphere>
-  );
-}
-
 
 // Wind Effect Particles
 function WindParticles({ speed = 5 }) {
@@ -178,6 +149,12 @@ export default function WeatherScene({
   const weatherCondition = weather?.toLowerCase() || 'clear';
   const backgroundMoonSize = 64;
   
+  // Time detection for sunrise/sunset
+  const hour = new Date().getHours();
+  const isSunrise = hour >= 5 && hour < 7;
+  const isSunset = hour >= 18 && hour < 20;
+  const isGoldenHour = isSunrise || isSunset;
+  
   // Determine weather effects
   const isRaining = weatherCondition.includes('rain') || weatherCondition.includes('drizzle');
   const isSnowing = weatherCondition.includes('snow');
@@ -185,28 +162,30 @@ export default function WeatherScene({
   const isCloudy = weatherCondition.includes('cloud') || weatherCondition.includes('overcast');
   const isFoggy = weatherCondition.includes('fog') || weatherCondition.includes('mist') || humidity > 85;
   const isWindy = windSpeed > 10;
+  
+  // Mist/Fog should obscure celestial bodies
+  const isMistyCondition = weatherCondition.includes('mist') || weatherCondition.includes('fog');
+  const shouldObscureSun = isRaining || isSnowing || isCloudy || isMistyCondition;
 
   if (mode === 'css') {
     return (
       <div className="relative w-full h-48 flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-sky-300/20 to-sky-900/40 dark:from-slate-800 dark:to-slate-950" />
         {isNight ? (
-          // Show moon at night: clear, clouds, or precipitation
-          (!isRaining && !isSnowing && !isCloudy) ? (
+          (!isRaining && !isSnowing && !isCloudy && !isMistyCondition) ? (
             <CelestialMoon phase={0.6} size={backgroundMoonSize} />
           ) : (
             <div className="w-16 h-16 rounded-full bg-gray-400/20 blur-sm" />
           )
         ) : (
-          // Day: show sun only in clear weather, diffused glow during precipitation
-          (!isRaining && !isSnowing && !isCloudy) ? (
+          (!isRaining && !isSnowing && !isCloudy && !isMistyCondition) ? (
             <CelestialSun temperature={temperature} size={72} />
           ) : (
             <div className="w-20 h-20 rounded-full bg-yellow-200/30 dark:bg-yellow-300/20 blur-md" />
           )
         )}
         {/* Simple stars for night (only in clear weather) */}
-        {isNight && !isRaining && !isSnowing && !isCloudy && (
+        {isNight && !isRaining && !isSnowing && !isCloudy && !isMistyCondition && (
           <div className="absolute inset-0 pointer-events-none">
             {Array.from({ length: 40 }).map((_, i) => (
               <span
@@ -232,119 +211,61 @@ export default function WeatherScene({
       camera={{ position: [0, 5, 15], fov: 75 }}
       style={{ background: 'transparent' }}
     >
-      {/* Lighting Setup */}
-      <ambientLight intensity={isRaining ? 0.15 : isNight ? 0.2 : 0.6} color={isNight ? "#2f3545" : "#FFFFFF"} />
-      <directionalLight 
-        position={isNight ? [-6, 12, 4] : [10, 10, 5]} 
-        intensity={isRaining ? 0.15 : isNight ? 0.3 : 1} 
-        color={isNight ? "#7586a3" : "#FFFFFF"}
-        castShadow
+      <LightingSection
+        isNight={isNight}
+        isRaining={isRaining}
+        isGoldenHour={isGoldenHour}
+        isMistyCondition={isMistyCondition}
       />
-      
-      {/* Sky and Stars */}
-      {isNight && !isRaining && !isSnowing && !isCloudy && <Stars radius={100} depth={50} count={1200} factor={2.5} saturation={0} fade />}
-      {!isNight && !isCloudy && !isRaining && !isSnowing && (
-        <Sky
-          distance={450000}
-          sunPosition={[10, 10, -10]}
-          inclination={0}
-          azimuth={0.25}
-        />
-      )}
 
-      {/* Celestial Bodies */}
-      {isNight ? (
-        (isRaining || isSnowing || isCloudy) ? (
-          // Diffused moon behind clouds/precipitation
-          <group position={[-12, 12, -18]} scale={[2.2, 2.2, 2.2]}>
-            <Sphere args={[2.2, 32, 32]}>
-              <meshStandardMaterial
-                color="#cfd8e3"
-                emissive="#9aa5b5"
-                emissiveIntensity={isSnowing ? 0.12 : 0.1}
-                transparent
-                opacity={isSnowing ? 0.2 : isCloudy ? 0.3 : 0.35}
-                roughness={1}
-                metalness={0}
-              />
-            </Sphere>
-          </group>
-        ) : (
-          <group position={[-15, 14, -20]}>
-            <Moon 
-              radius={2}
-              lightTheme={theme === 'light'} 
-              quality="high"
-              showGlow={true}
-              showAtmosphere={true}
-            />
-          </group>
-        )
-      ) : (
-        // Day: hide sun during snow/rain/heavy clouds, show diffused glow instead
-        (isSnowing || isRaining || isCloudy) ? (
-          <group position={[12, 12, -18]} scale={[1.5, 1.5, 1.5]}>
-            <Sphere args={[1.5, 32, 32]}>
-              <meshStandardMaterial
-                color="#fff5e1"
-                emissive="#ffe4b3"
-                emissiveIntensity={isSnowing ? 0.2 : 0.15}
-                transparent
-                opacity={isSnowing ? 0.15 : isRaining ? 0.2 : 0.25}
-                roughness={1}
-                metalness={0}
-              />
-            </Sphere>
-          </group>
-        ) : (
-          <Sun temperature={temperature} isVisible={true} />
-        )
-      )}
+      <SkySection
+        isNight={isNight}
+        isRaining={isRaining}
+        isSnowing={isSnowing}
+        isCloudy={isCloudy}
+        isMistyCondition={isMistyCondition}
+        isGoldenHour={isGoldenHour}
+      />
 
-      {/* Weather Effects */}
-      {isRaining && (
-        <>
-          <RealisticRainStreaks
-            count={isThunderstorm ? 1200 : 800}
-            intensity={isThunderstorm ? 2.0 : 1.2}
-            windSpeed={Math.min(windSpeed / 15, 0.6)}
-            windDirection={Math.PI / 4}
-            enabled={true}
-            splashEnabled={!isThunderstorm || windSpeed < 25}
-            color="#b8d4f0"
-            area={{ x: 40, z: 40, height: 25 }}
+      <CelestialBodiesSection
+        isNight={isNight}
+        shouldObscureSun={shouldObscureSun}
+        isSnowing={isSnowing}
+        isCloudy={isCloudy}
+        isRaining={isRaining}
+        isMistyCondition={isMistyCondition}
+        theme={theme}
+        temperature={temperature}
+        isGoldenHour={isGoldenHour}
+        isSunrise={isSunrise}
+      />
+
+      <WeatherEffectsSection
+        isRaining={isRaining}
+        isSnowing={isSnowing}
+        isThunderstorm={isThunderstorm}
+        isFoggy={isFoggy}
+        isCloudy={isCloudy}
+        isWindy={isWindy}
+        temperature={temperature}
+        windSpeed={windSpeed}
+        renderClouds={() => (
+          <DynamicClouds
+            coverage={Math.max(cloudCoverage, isRaining ? 0.9 : 0.6)}
+            isStormy={true}
+            opacity={isGoldenHour ? 0.4 : undefined}
           />
-          <WeatherEffects
-            fogEnabled={true}
-            fogOpacity={isThunderstorm ? 0.2 : 0.12}
-            lightningEnabled={isThunderstorm}
-            lightningFrequency={0.025}
-            cloudsEnabled={false}
-            puddlesEnabled={false}
+        )}
+        renderFog={() => (
+          <FogEffect
+            color={isRaining ? 0x0f1624 : 0x1f2937}
+            near={isRaining ? 4 : (isMistyCondition ? 3 : 6)}
+            far={isRaining ? 55 : (isMistyCondition ? 40 : 70)}
           />
-          <FogEffect color={0x0f1624} near={4} far={55} />
-        </>
-      )}
-      {isSnowing && (
-        <RealisticSnowfall
-          count={temperature < -15 ? 900 : temperature < -5 ? 600 : 400}
-          intensity={temperature < -15 ? 1.5 : temperature < -5 ? 1.0 : 0.7}
-          windSpeed={Math.min(windSpeed / 50, 0.3)}
-          windDirection={Math.PI / 6}
-          enabled={true}
-          renderMode={temperature < -15 ? 'simple' : 'detailed'}
-          accumulation={temperature < -5}
-          snowflakeSize={0.15}
-          color="#ffffff"
-          area={{ x: 50, z: 50, height: 30 }}
-        />
-      )}
-      {(isCloudy || isThunderstorm || isRaining) && (
-        <DynamicClouds coverage={Math.max(cloudCoverage, isRaining ? 0.9 : 0.6)} isStormy={true} />
-      )}
-      {isThunderstorm && <Lightning active={true} />}
-      {isFoggy && !isRaining && <FogEffect color={0x1f2937} near={6} far={70} />}
-      {isWindy && <WindParticles speed={windSpeed} />}
+        )}
+        renderLightning={() => <Lightning active={true} />}
+        renderWind={() => <WindParticles speed={windSpeed} />}
+      />
 
       {/* Clear Weather Atmosphere */}
       {weatherCondition === 'clear' && !isNight && (

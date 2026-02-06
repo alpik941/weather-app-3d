@@ -58,7 +58,7 @@
 - Дедупликация и навигация
 
 ### 7. **Документация**
-📁 `WARNING_MANAGEMENT_GUIDE.md` (450 строк)
+📁 `docs/WARNING_MANAGEMENT_GUIDE.md` (450 строк)
 - Полный guide с примерами
 - API документация
 - Best practices
@@ -225,8 +225,8 @@ src/
     └── weatherService.js        🔄 UPDATED (+150 LOC)
 
 Docs/
-├── WARNING_MANAGEMENT_GUIDE.md  ✨ NEW (450 LOC)
-└── TESTING_ALERTS_GUIDE.md      (existing)
+├── docs/WARNING_MANAGEMENT_GUIDE.md  ✨ NEW (450 LOC)
+└── docs/TESTING_ALERTS_GUIDE.md      (existing)
 ```
 
 ---
@@ -327,7 +327,7 @@ closeWarning();
 
 **Если возникнут вопросы:**
 
-1. Смотрите `WARNING_MANAGEMENT_GUIDE.md` для полной документации
+1. Смотрите `docs/WARNING_MANAGEMENT_GUIDE.md` для полной документации
 2. Проверьте примеры в тестах (`*.test.js`)
 3. Используйте console.log для отладки состояния hook'а
 

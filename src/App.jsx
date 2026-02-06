@@ -1,22 +1,20 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wind, Droplets, Eye, Thermometer, Sun, Moon, Cloud, CloudRain, CloudSnow, Zap, Settings, Map as MapIcon, Locate, Activity, Gauge } from 'lucide-react';
-import { formatWindSpeed, getWindSpeedUnit } from './utils/windSpeed';
+import { Sun, Moon, Cloud, CloudRain, CloudSnow, Zap, Settings, Map as MapIcon, Locate } from 'lucide-react';
 // Lazy-load WeatherScene to defer heavy three.js chunk until after initial UI
 const WeatherSceneLazy = React.lazy(() => import('./components/WeatherScene'));
-import WeatherCard from './components/WeatherCard';
-import ForecastCard from './components/ForecastCard';
 import SearchBar from './components/SearchBar';
-import HourlyForecast from './components/HourlyForecast';
-import WeeklyForecast from './components/WeeklyForecast';
-import WeatherAlerts from './components/WeatherAlerts';
-import ActivityForecast from './components/ActivityForecast';
-import WeatherMap from './components/WeatherMap';
-import SettingsPanel from './components/Settings/SettingsPanel';
-import AstronomyPanel from './components/AstronomyPanel';
 import { getWeatherData, getForecastData, getHourlyForecast, getWeeklyForecast, getWeatherAlerts, getActivityForecast, getCurrentLocation, getWeatherDataByCoords, getForecastDataByCoords, getAirQuality, getValidationErrors, clearValidationErrors, validateAlertConsistency } from './services/weatherService';
 import OnboardingOverlay from './components/Onboarding/OnboardingOverlay';
 import ValidationErrorModal from './components/ValidationErrorModal';
+import WeatherAlertsSection from './components/sections/WeatherAlertsSection';
+import SettingsSection from './components/sections/SettingsSection';
+import MapSection from './components/sections/MapSection';
+import ViewToggle from './components/sections/ViewToggle';
+import TodaySection from './components/sections/TodaySection';
+import HourlySection from './components/sections/HourlySection';
+import WeeklySection from './components/sections/WeeklySection';
+import ActivitiesSection from './components/sections/ActivitiesSection';
 import { putCache, getCache } from './utils/offlineCache';
 import { useTheme } from './contexts/ThemeContext';
 import { useTime } from './contexts/TimeContext';
@@ -112,7 +110,11 @@ function App() {
         const errors = getValidationErrors();
         if (errors.length > 0) {
           setValidationErrors(errors);
-          setShowValidationModal(true);
+          // Show validation modal only in dev mode
+          const isDev = import.meta.env.DEV || localStorage.getItem('dev-mode') === 'true';
+          if (isDev) {
+            setShowValidationModal(true);
+          }
         }
 
         // Cache the successful bundle snapshot per city for offline fallback
@@ -430,10 +432,6 @@ function App() {
       ? 'text-gray-800 dark:text-white'
       : 'text-gray-900';
 
-  const formatTemp = (temp) => {
-    return Math.round(temp);
-  };
-
   const normalizeAlertType = (event) => {
     const s = String(event || '')
       .toLowerCase()
@@ -526,52 +524,33 @@ function App() {
       </AnimatePresence>
 
       {/* Weather Alerts */}
-      {(() => {
-        const nowSeconds = Math.floor(Date.now() / 1000);
-        const locationKey = getLocationKey();
-        const dismissed = dismissedAlertsByLocation[locationKey] || {};
-        const visibleAlerts = alerts.filter((alert) => {
-          const dismissKey = getAlertDismissKey(alert);
-          const until = dismissed[dismissKey];
-          return !(typeof until === 'number' && until > nowSeconds);
-        });
-        return (
-          <WeatherAlerts
-            alerts={visibleAlerts}
-            onDismiss={dismissAlert}
-            cardClass={cardBase}
-            fontClass={cardTitle}
-          />
-        );
-      })()}
+      <WeatherAlertsSection
+        alerts={alerts}
+        dismissedAlertsByLocation={dismissedAlertsByLocation}
+        locationKey={getLocationKey()}
+        getAlertDismissKey={getAlertDismissKey}
+        onDismiss={dismissAlert}
+        cardClass={cardBase}
+        fontClass={cardTitle}
+      />
 
       {/* Settings Panel */}
-      <AnimatePresence>
-        {showSettings && (
-          <SettingsPanel
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-            onCitySelect={setCity}
-            cardClass={cardBase}
-            fontClass={cardTitle}
-          />
-        )}
-      </AnimatePresence>
+      <SettingsSection
+        showSettings={showSettings}
+        onClose={() => setShowSettings(false)}
+        onCitySelect={setCity}
+        cardClass={cardBase}
+        fontClass={cardTitle}
+      />
 
       {/* Weather Map */}
-      <AnimatePresence>
-        {showMap && weatherData && (
-          <WeatherMap
-            isOpen={showMap}
-            onClose={() => setShowMap(false)}
-            lat={weatherData?.coord?.lat}
-            lon={weatherData?.coord?.lon}
-            city={weatherData?.name}
-            cardClass={cardBase}
-            fontClass={cardTitle}
-          />
-        )}
-      </AnimatePresence>
+      <MapSection
+        showMap={showMap}
+        onClose={() => setShowMap(false)}
+        weatherData={weatherData}
+        cardClass={cardBase}
+        fontClass={cardTitle}
+      />
 
       {/* 3D Weather Scene Background (lazy) */}
       <div className="fixed inset-0 z-0">
@@ -664,255 +643,54 @@ function App() {
         <SearchBar onSearch={setCity} onLocationRequest={handleFindMe} cardClass={cardBase} fontClass={cardTitle} />
 
         {/* View Toggle */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex justify-center mb-8"
-        >
-          <div className={`glass-card-intense p-3 rounded-3xl flex space-x-3 overflow-x-auto ${cardBase}`}>
-            {[
-              { key: 'today', label: t('today'), icon: Sun },
-              { key: 'hourly', label: t('hourly'), icon: Activity },
-              { key: 'weekly', label: t('weekly'), icon: Cloud },
-              { key: 'activities', label: t('activities'), icon: Activity }
-            ].map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setCurrentView(key)}
-                className={`flex items-center px-6 py-3 rounded-2xl transition-all duration-400 whitespace-nowrap micro-bounce ${
-                  currentView === key
-                    ? `${cardBase} shadow-lg glow-animation backdrop-blur-sm`
-                    : `${cardSecondary} hover:bg-white/60 interactive-scale`
-                }`}
-                aria-label={label}
-              >
-                <Icon className={`w-5 h-5 mr-3 weather-icon ${cardHeader}`} />
-                <span className="typography-caption font-semi">{label}</span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
+        <ViewToggle
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          t={t}
+          cardBase={cardBase}
+          cardSecondary={cardSecondary}
+          cardHeader={cardHeader}
+        />
 
-        {/* Main Weather Card */}
-        <AnimatePresence mode="wait">
-          {weatherData && currentView === 'today' && (
-            <motion.div
-              key={weatherData.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="mb-8"
-            >
-              <WeatherCard
-                data={weatherData}
-                icon={getWeatherIcon(weatherData.weather?.[0]?.main)}
-                airQuality={airQuality}
-                cardClass={cardBase}
-                fontClass={cardTitle}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <TodaySection
+          weatherData={weatherData}
+          forecastData={forecastData}
+          weeklyData={weeklyData}
+          airQuality={airQuality}
+          currentView={currentView}
+          t={t}
+          ctxDayKey={ctxDayKey}
+          getWeatherIcon={getWeatherIcon}
+          cardSecondary={cardSecondary}
+          cardTitle={cardTitle}
+          cardHeader={cardHeader}
+          cardCaption={cardCaption}
+          temperatureUnit={temperatureUnit}
+          windSpeedUnit={windSpeedUnit}
+        />
 
-        {/* Weather Details Grid - Today View */}
-        {weatherData && currentView === 'today' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-8"
-          >
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-              <Wind className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-caption mb-2 ${cardCaption}`}>{t('windSpeed')}</p>
-              <p className={`typography-title ${cardTitle}`}>
-                {formatWindSpeed(weatherData.wind?.speed ?? 0, windSpeedUnit)} {getWindSpeedUnit(windSpeedUnit)}
-              </p>
-              {/* Wind direction removed per request */}
-            </div>
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-              <Droplets className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-caption mb-2 ${cardCaption}`}>{t('humidity')}</p>
-              <p className={`typography-title ${cardTitle}`}>{weatherData.main?.humidity}%</p>
-            </div>
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-              <Eye className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-caption mb-2 ${cardCaption}`}>{t('visibility')}</p>
-              <p className={`typography-title ${cardTitle}`}>{(weatherData.visibility / 1000).toFixed(1)} km</p>
-            </div>
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-              <Thermometer className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-caption mb-2 ${cardCaption}`}>{t('feelsLike')}</p>
-              <p className={`typography-title ${cardTitle}`}>{formatTemp(weatherData.main?.feels_like)}°{temperatureUnit === 'celsius' ? 'C' : 'F'}</p>
-            </div>
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-              <Gauge className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-caption mb-2 ${cardCaption}`}>{t('pressure')}</p>
-              <p className={`typography-title ${cardTitle}`}>{weatherData.main?.pressure} hPa</p>
-            </div>
-            {airQuality && (
-              <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-                <Activity className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-                <p className={`typography-title ${cardTitle}`}>
-                  {(() => {
-                    const cat = airQuality?.index?.category;
-                    const labelMap = {
-                      good: t('aqiGood'),
-                      moderate: t('aqiModerate'),
-                      usg: t('aqiUSG'),
-                      unhealthy: t('aqiUnhealthy'),
-                      veryUnhealthy: t('aqiVeryUnhealthy'),
-                      hazardous: t('aqiHazardous')
-                    };
-                    const label = labelMap[cat] || t('aqiModerate');
-                    // Derive a user-friendly percentage: 100% = best air, 0% = worst
-                    const scale = airQuality?.index?.scale;
-                    const idx = airQuality?.index?.value;
-                    let pct = null;
-                    if (typeof idx === 'number') {
-                      if (scale === 'us-epa') {
-                        // 1 (best) .. 6 (worst)
-                        pct = Math.round(((6 - idx) / 5) * 100);
-                      } else if (scale === 'openweather') {
-                        // 1 (best) .. 5 (worst)
-                        pct = Math.round(((5 - idx) / 4) * 100);
-                      }
-                      // clamp
-                      if (pct != null) pct = Math.max(0, Math.min(100, pct));
-                    }
-                    return pct != null
-                      ? `${t('airQuality')} ${label}, ${pct}%`
-                      : `${t('airQuality')} ${label}`;
-                  })()}
-                </p>
-              </div>
-            )}
-            {typeof weatherData?.uv === 'number' && (
-              <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
-                <Sun className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-                <p className={`typography-caption mb-2 ${cardCaption}`}>{t('uvIndex')}</p>
-                <p className={`typography-title ${cardTitle}`}>
-                  {(() => {
-                    const v = weatherData.uv;
-                    let catKey = 'uvLow';
-                    if (v >= 11) catKey = 'uvExtreme';
-                    else if (v >= 8) catKey = 'uvVeryHigh';
-                    else if (v >= 6) catKey = 'uvHigh';
-                    else if (v >= 3) catKey = 'uvModerate';
-                    return `${t(catKey)} (${v})`;
-                  })()}
-                </p>
-              </div>
-            )}
-          </motion.div>
-        )}
+        <HourlySection
+          hourlyData={hourlyData}
+          currentView={currentView}
+          getWeatherIcon={getWeatherIcon}
+          cardSecondary={cardSecondary}
+          cardTitle={cardTitle}
+        />
 
-        {/* 5-Day Forecast - Today View */}
-        {forecastData && currentView === 'today' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h2 className={`typography-title mb-8 text-center gradient-text ${cardTitle}`}>{t('fiveDayForecast')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {(() => {
-                const list = forecastData?.list || [];
-                // Group by forecast-location day key using TimeContext (handles IANA or numeric offset)
-                const byDay = new globalThis.Map();
-                for (const it of list) {
-                  const k = ctxDayKey ? ctxDayKey(it.dt) : new Date(it.dt * 1000).toISOString().slice(0,10);
-                  if (!byDay.has(k)) byDay.set(k, []);
-                  byDay.get(k).push(it);
-                }
-                // Pick a representative item per day (middle 3-hour slot)
-                // Prefer days from today forward in target timezone
-                const todayKey = ctxDayKey ? ctxDayKey(Math.floor(Date.now()/1000)) : new Date().toISOString().slice(0,10);
-                const allKeysSorted = Array.from(byDay.keys()).sort();
-                let futureKeys = allKeysSorted.filter(k => k >= todayKey).slice(0,5);
-                let days = futureKeys.length === 5 ? futureKeys : allKeysSorted.slice(0,5);
-                let daily = days.map((k) => {
-                  const arr = byDay.get(k);
-                  return arr[Math.floor(arr.length / 2)] || arr[0];
-                });
-                // If we still have fewer than 5 days (e.g., free WeatherAPI returns only 3),
-                // backfill using weeklyData.daily where available.
-                if (daily.length < 5 && weeklyData?.daily?.length) {
-                  const haveKeys = new Set(days);
-                  const needed = 5 - daily.length;
-                  const fillers = [];
-                  for (const d of weeklyData.daily) {
-                    const key = ctxDayKey ? ctxDayKey(d.dt) : new Date(d.dt * 1000).toISOString().slice(0,10);
-                    if (key >= todayKey && !haveKeys.has(key)) {
-                      // Synthesize an OW-like list item from weekly daily data
-                      const avgTemp = (d.temp.max + d.temp.min) / 2;
-                      fillers.push({
-                        dt: d.dt,
-                        main: { temp: avgTemp, temp_min: d.temp.min, temp_max: d.temp.max },
-                        weather: d.weather,
-                        wind: { speed: d.wind_speed },
-                        pop: d.pop,
-                      });
-                      haveKeys.add(key);
-                      if (fillers.length >= needed) break;
-                    }
-                  }
-                  daily = daily.concat(fillers).slice(0,5);
-                }
-                return daily.map((item) => (
-                  <ForecastCard
-                    key={item.dt}
-                    data={item}
-                    icon={getWeatherIcon(item.weather?.[0]?.main)}
-                    cardClass={cardSecondary}
-                    fontClass={cardTitle}
-                  />
-                ));
-              })()}
-            </div>
-            {/* Astronomy Panel */}
-            <div className="mt-10">
-              <AstronomyPanel
-                lat={weatherData?.coord?.lat}
-                lon={weatherData?.coord?.lon}
-                sunrise={weatherData?.sys?.sunrise ? new Date(weatherData.sys.sunrise * 1000) : null}
-                sunset={weatherData?.sys?.sunset ? new Date(weatherData.sys.sunset * 1000) : null}
-                timezone={weatherData?.sys?.tz_id || weatherData?.timezone}
-              />
-            </div>
-          </motion.div>
-        )}
+        <WeeklySection
+          weeklyData={weeklyData}
+          currentView={currentView}
+          getWeatherIcon={getWeatherIcon}
+          cardSecondary={cardSecondary}
+          cardTitle={cardTitle}
+        />
 
-        {/* Hourly Forecast View */}
-        {hourlyData && currentView === 'hourly' && (
-          (() => {
-            // hourlyData may be either { hourly: [...] , timezone } or directly an array (from some cached payloads).
-            const hourlyList = Array.isArray(hourlyData) ? hourlyData : (hourlyData?.hourly || []);
-            return (
-              <HourlyForecast
-                data={hourlyList}
-                getWeatherIcon={getWeatherIcon}
-                cardClass={cardSecondary}
-                fontClass={cardTitle}
-              />
-            );
-          })()
-        )}
-
-        {/* Weekly Forecast View */}
-        {weeklyData && currentView === 'weekly' && (
-          <WeeklyForecast
-            data={weeklyData.daily}
-            getWeatherIcon={getWeatherIcon}
-            cardClass={cardSecondary}
-            fontClass={cardTitle}
-          />
-        )}
-
-        {/* Activity Forecast View */}
-        {activityData && currentView === 'activities' && (
-          <ActivityForecast data={activityData} cardClass={cardSecondary} fontClass={cardTitle} />
-        )}
+        <ActivitiesSection
+          activityData={activityData}
+          currentView={currentView}
+          cardSecondary={cardSecondary}
+          cardTitle={cardTitle}
+        />
       </div>
     </div>
   );

@@ -37,8 +37,6 @@
 📁 RealisticRain3D/
 ├── 📄 RealisticRainStreaks.jsx      # Основной компонент дождя
 ├── 📄 WeatherEffects.jsx            # Дополнительные эффекты
-├── 📄 WeatherRainScene.jsx          # Готовая сцена (простая)
-├── 📄 CompleteRainScene.jsx         # Полная сцена (с пресетами)
 ├── 📄 INTEGRATION_GUIDE.md          # Подробное руководство
 └── 📄 README.md                     # Этот файл
 ```
@@ -62,36 +60,9 @@ import RealisticRainStreaks from './RealisticRainStreaks';
 />
 ```
 
-### 2️⃣ Готовая сцена с настройками
+### 2️⃣ Готовая сцена
 
-```jsx
-import WeatherRainScene from './WeatherRainScene';
-
-function App() {
-  return (
-    <WeatherRainScene
-      rainCount={800}
-      rainIntensity={1.5}
-      windSpeed={0.5}
-      fogEnabled={true}
-    />
-  );
-}
-```
-
-### 3️⃣ Полная сцена с пресетами
-
-```jsx
-import CompleteRainScene from './CompleteRainScene';
-
-function App() {
-  return (
-    <CompleteRainScene 
-      preset="storm"      // 'drizzle' | 'light-rain' | 'heavy-rain' | 'storm'
-      showStats={false}
-      showControls={false}
-    />
-  );
+Готовые демо‑сцены удалены. Используй WeatherScene и RealisticRainStreaks.
 }
 ```
 
@@ -269,7 +240,7 @@ setIntensity(1.2);
 src/components/weather/
 ├── RealisticRainStreaks.jsx
 ├── WeatherEffects.jsx
-└── CompleteRainScene.jsx  # опционально
+└── (удалено) демо‑сцены
 ```
 
 ### Шаг 2: Установи зависимости (если нет)

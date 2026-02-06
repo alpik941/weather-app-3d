@@ -622,6 +622,9 @@ const translations = {
   savedCities: {
     en: 'Saved Cities', es: 'Ciudades Guardadas', fr: 'Villes Enregistrées', de: 'Gespeicherte Städte', it: 'Città Salvate', pt: 'Cidades Salvas', ru: 'Сохраненные города', zh: '已保存的城市', ja: '保存した都市', ko: '저장된 도시'
   },
+  units: {
+    en: 'Units', es: 'Unidades', fr: 'Unités', de: 'Einheiten', it: 'Unità', pt: 'Unidades', ru: 'Единицы', zh: '单位', ja: '単位', ko: '단위'
+  },
   addCityPlaceholder: {
     en: 'Add city (max 10)', es: 'Agregar ciudad (máx. 10)', fr: 'Ajouter une ville (max 10)', de: 'Stadt hinzufügen (max. 10)', it: 'Aggiungi città (max 10)', pt: 'Adicionar cidade (máx. 10)', ru: 'Добавить город (макс. 10)', zh: '添加城市（最多10个）', ja: '都市を追加（最大10件）', ko: '도시 추가 (최대 10개)'
   },
