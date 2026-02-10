@@ -58,6 +58,34 @@ npm run android
 npm run ios
 ```
 
+## 📚 Documentation
+
+### Time of Day Visual System
+
+A unified design token system for consistent visual styling across Three.js scenes and CSS/React components.
+
+**Quick links:**
+- 📖 [**Start Here**: Introduction & Quick Start](./docs/TIME_OF_DAY_README.md)
+- 📑 [**Index**: All documentation](./docs/TIME_OF_DAY_INDEX.md)
+- ⚡ [**Cheatsheet**: Developer reference](./docs/CHEATSHEET.md)
+
+**Features:**
+- 🌅 4 time periods (sunrise, day, sunset, night) with complete visual presets
+- 🎨 Unified color palettes, lighting, fog, and atmosphere parameters
+- 🌦️ Weather modifiers (cloudy, rainy, misty)
+- ⚛️ Works with both Three.js and CSS/React components
+- 📐 Comprehensive reference tables and diagrams
+
+**Usage:**
+```javascript
+import { getTimeOfDayVisuals } from './utils/timeOfDayVisuals';
+
+const visuals = getTimeOfDayVisuals('sunset');
+// Use visuals.lighting, visuals.colors, visuals.cssVars...
+```
+
+See [docs/TIME_OF_DAY_INDEX.md](./docs/TIME_OF_DAY_INDEX.md) for complete documentation.
+
 ## Next steps
 
 - Extract design tokens to `src/shared/tokens.js` and consume from both Tailwind and nativewind.

@@ -20,10 +20,10 @@ function DynamicClouds({ coverage = 0.5, isStormy = false, opacity }) {
 
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.02;
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.002;
       groupRef.current.children.forEach((cloud, index) => {
-        cloud.position.x += Math.sin(state.clock.elapsedTime * 0.1 + index) * 0.01;
-        cloud.position.z += Math.cos(state.clock.elapsedTime * 0.1 + index) * 0.01;
+        cloud.position.x += Math.sin(state.clock.elapsedTime * 0.015 + index) * 0.0015;
+        cloud.position.z += Math.cos(state.clock.elapsedTime * 0.015 + index) * 0.0015;
       });
     }
   });
@@ -41,7 +41,7 @@ function DynamicClouds({ coverage = 0.5, isStormy = false, opacity }) {
           scale={Math.random() * 2 + 1}
           opacity={cloudOpacity}
           color={isStormy ? "#7fa4d2" : "#cfe7ff"}
-          speed={0.1}
+          speed={0.01}
         />
       ))}
     </group>
