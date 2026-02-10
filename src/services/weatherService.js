@@ -1,11 +1,11 @@
-// Web-only weather services (Vite). Removed React Native cross-platform layer.
-// Environment keys (Vite)
-const WEATHERAPI_KEY = import.meta.env.VITE_WEATHERAPI_KEY;
-const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+// Web-only weather services (Vite).
+// SECURITY: Provider API keys must not be shipped to the browser.
+// All provider requests go through a backend proxy (default: /api).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Provider base URLs
-const WEATHERAPI_BASE_URL = 'https://api.weatherapi.com/v1';
-const OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
+// Provider base URLs (proxied)
+const WEATHERAPI_BASE_URL = `${API_BASE_URL}/weatherapi`;
+const OPENWEATHER_BASE_URL = `${API_BASE_URL}/openweather/data/2.5`;
 const SUNRISE_SUNSET_BASE_URL = 'https://api.sunrisesunset.io/json';
 
 // Import wind chill calculator
@@ -111,25 +111,17 @@ const convertUTCToTimestamp = (iso) => {
 };
 
 /**
- * Fix precipitation type based on temperature
- * If temp < 0°C and condition is Rain, convert to Snow or Sleet
+ * DISABLED: Previously auto-corrected precipitation type based on temperature
+ * Now showing exact API data - API knows better than our assumptions
+ * Real weather can have:
+ * - Freezing rain (rain at sub-zero temperatures)
+ * - Local atmospheric conditions
+ * - Warm air layers at altitude
+ * Users need ACCURATE data, not "corrected" data
  */
-const fixPrecipitationType = (main, description, tempC) => {
-  if (typeof tempC !== 'number') return { main, description };
-  
-  // Critical: Rain cannot occur below freezing
-  if (tempC < 0 && main === 'Rain') {
-    const newType = tempC < -5 ? 'Snow' : 'Sleet';
-    addValidationError({
-      type: 'precipitation_type_error',
-      message: `Temperature ${tempC.toFixed(1)}°C is below freezing, but precipitation type is Rain. Changed to ${newType}.`,
-      severity: 'warning'
-    });
-    return { main: newType, description: description.replace(/rain/gi, newType.toLowerCase()) };
-  }
-  
-  return { main, description };
-};
+// const fixPrecipitationType = (main, description, tempC) => {
+//   ... disabled ...
+// };
 
 const normalizeCondition = (text, ctx = {}) => {
   const description = (text || '').toLowerCase();
@@ -149,11 +141,7 @@ const normalizeCondition = (text, ctx = {}) => {
   else if (/(fog|mist|haze|smoke)/i.test(description)) main = 'Fog';
   else main = 'Clear';
   
-  // Validate precipitation type against temperature
-  if (tempC !== undefined) {
-    return fixPrecipitationType(main, description, tempC);
-  }
-  
+  // Return exact API data without modifications
   return { main, description };
 };
 
@@ -359,7 +347,7 @@ const owCategory = (idx) => {
 export const getAirQuality = async (lat, lon) => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=1&aqi=yes&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=yes&alerts=no`
     );
     if (!response.ok) throw new Error('AQI via WeatherAPI not found');
     const data = await response.json();
@@ -382,7 +370,7 @@ export const getAirQuality = async (lat, lon) => {
   } catch (e) {
     // fallback to OpenWeather
     try {
-      const url = `${OPENWEATHER_BASE_URL}/air_pollution?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`;
+      const url = `${OPENWEATHER_BASE_URL}/air_pollution?lat=${lat}&lon=${lon}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('OpenWeather AQI not available');
       const ow = await res.json();
@@ -418,7 +406,7 @@ export const getAirQuality = async (lat, lon) => {
 export const getWeatherData_legacy = async (city, units = 'metric') => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${city}&days=1&aqi=no&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${city}&days=1&aqi=no&alerts=no`
     );
     if (!response.ok) throw new Error('Weather data not found');
     const data = await response.json();
@@ -427,7 +415,7 @@ export const getWeatherData_legacy = async (city, units = 'metric') => {
     console.error('WeatherAPI.com failed, falling back to OpenWeatherMap:', error);
     // Fallback to OpenWeatherMap
     const response = await fetch(
-      `${OPENWEATHER_BASE_URL}/weather?q=${city}&appid=${OPENWEATHER_API_KEY}&units=${units}`
+      `${OPENWEATHER_BASE_URL}/weather?q=${city}&units=${units}`
     );
     if (!response.ok) throw new Error('Weather data not found');
     return await response.json();
@@ -448,13 +436,13 @@ export const getWeatherData = async (city, units = 'metric') => {
 export const getForecastData_legacy = async (city, units = 'metric') => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${city}&days=5&aqi=no&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${city}&days=5&aqi=no&alerts=no`
     );
     if (!response.ok) {
       console.warn('WeatherAPI.com forecast failed, falling back to OpenWeatherMap');
       // Fallback to OpenWeatherMap
       const fallbackResponse = await fetch(
-        `${OPENWEATHER_BASE_URL}/forecast?q=${city}&appid=${OPENWEATHER_API_KEY}&units=${units}`
+        `${OPENWEATHER_BASE_URL}/forecast?q=${city}&units=${units}`
       );
       if (!fallbackResponse.ok) throw new Error('Forecast data not found');
       const owData = await fallbackResponse.json();
@@ -509,7 +497,7 @@ export const getForecastData_legacy = async (city, units = 'metric') => {
       // WeatherAPI key likely limited to <5 days. Fallback to OpenWeather 5-day API.
       console.warn(`WeatherAPI.com returned ${uniqueDays} days (<5). Falling back to OpenWeatherMap 5-day.`);
       const fallbackResponse = await fetch(
-        `${OPENWEATHER_BASE_URL}/forecast?q=${city}&appid=${OPENWEATHER_API_KEY}&units=${units}`
+        `${OPENWEATHER_BASE_URL}/forecast?q=${city}&units=${units}`
       );
       if (fallbackResponse.ok) {
         const owData = await fallbackResponse.json();
@@ -535,7 +523,7 @@ export const getForecastData_legacy = async (city, units = 'metric') => {
     console.error('WeatherAPI.com forecast failed, falling back to OpenWeatherMap:', error);
     // Fallback to OpenWeatherMap
     const response = await fetch(
-      `${OPENWEATHER_BASE_URL}/forecast?q=${city}&appid=${OPENWEATHER_API_KEY}&units=${units}`
+      `${OPENWEATHER_BASE_URL}/forecast?q=${city}&units=${units}`
     );
     if (!response.ok) throw new Error('Forecast data not found');
     const owData = await response.json();
@@ -558,7 +546,7 @@ export const getForecastData = async (city, units = 'metric') => {
 export const getHourlyForecast = async (lat, lon, units = 'metric') => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=3&aqi=no&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=3&aqi=no&alerts=no`
     );
     if (!response.ok) throw new Error('Hourly forecast not found');
     const data = await response.json();
@@ -602,7 +590,7 @@ export const getHourlyForecast = async (lat, lon, units = 'metric') => {
 export const getWeeklyForecast = async (lat, lon, units = 'metric') => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=7&aqi=no&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=7&aqi=no&alerts=no`
     );
     if (!response.ok) throw new Error('Weekly forecast not found');
     const data = await response.json();
@@ -773,7 +761,7 @@ export const validateAlertConsistency = (currentWeather, alerts) => {
 export const getWeatherAlerts = async (lat, lon) => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=1&aqi=no&alerts=yes`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=no&alerts=yes`
     );
     if (!response.ok) {
       console.warn('Weather alerts not available for this location');
@@ -916,7 +904,7 @@ const classifyAlertSeverity = (event, description) => {
 export const getActivityForecast = async (lat, lon, units = 'metric') => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=1&aqi=yes&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=yes&alerts=no`
     );
     if (!response.ok) throw new Error('Activity forecast not found');
     const data = await response.json();
@@ -1102,7 +1090,7 @@ export const getCurrentLocation = () => {
 export const getWeatherDataByCoords = async (lat, lon, units = 'metric') => {
   try {
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=1&aqi=no&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=no&alerts=no`
     );
     if (response.ok) {
       const data = await response.json();
@@ -1111,7 +1099,7 @@ export const getWeatherDataByCoords = async (lat, lon, units = 'metric') => {
   } catch {}
   // Fallback OpenWeatherMap
   const res = await fetch(
-    `${OPENWEATHER_BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=${units}`
+    `${OPENWEATHER_BASE_URL}/weather?lat=${lat}&lon=${lon}&units=${units}`
   );
   if (!res.ok) throw new Error('Weather by coords not found');
   return await res.json();
@@ -1127,7 +1115,7 @@ export const getForecastDataByCoords = async (lat, lon, units = 'metric') => {
   try {
     // WeatherAPI free tier provides up to 3 days. We'll still try and convert; backfill handled in UI.
     const response = await fetch(
-      `${WEATHERAPI_BASE_URL}/forecast.json?key=${WEATHERAPI_KEY}&q=${lat},${lon}&days=5&aqi=no&alerts=no`
+      `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=5&aqi=no&alerts=no`
     );
     if (response.ok) {
       const data = await response.json();
@@ -1156,7 +1144,7 @@ export const getForecastDataByCoords = async (lat, lon, units = 'metric') => {
   } catch {}
   // Fallback OpenWeatherMap 5-day
   const res = await fetch(
-    `${OPENWEATHER_BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=${units}`
+    `${OPENWEATHER_BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=${units}`
   );
   if (!res.ok) throw new Error('Forecast by coords not found');
   return await res.json();
