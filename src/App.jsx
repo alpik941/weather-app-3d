@@ -19,6 +19,7 @@ import { putCache, getCache } from './utils/offlineCache';
 import { useTheme } from './contexts/ThemeContext';
 import { useTime } from './contexts/TimeContext';
 import { useLanguage } from './contexts/LanguageContext';
+import { getTimeOfDayFromHour } from './utils/timeOfDayVisuals';
 
 function App() {
   const { theme, temperatureUnit, windSpeedUnit } = useTheme();
@@ -42,6 +43,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState('London');
   const [isNight, setIsNight] = useState(false);
+  const [timeOfDay, setTimeOfDay] = useState('day'); // 'sunrise' | 'day' | 'sunset' | 'night'
   const [showSettings, setShowSettings] = useState(false);
   // Removed dev-only rainy preview feature
   const [showMap, setShowMap] = useState(false);
@@ -180,10 +182,14 @@ function App() {
       try {
         const hh = String(formatTime(Date.now(), { hour12: false })).split(':')[0];
         const hour = parseInt(hh, 10);
-        if (!isNaN(hour)) setIsNight(hour < 6 || hour >= 18);
+        if (!isNaN(hour)) {
+          setIsNight(hour < 6 || hour >= 18);
+          setTimeOfDay(getTimeOfDayFromHour(hour));
+        }
       } catch {
         const hour = new Date().getHours();
         setIsNight(hour < 6 || hour >= 18);
+        setTimeOfDay(getTimeOfDayFromHour(hour));
       }
     }
   }, [weatherData, appTimezone, formatTime]);
@@ -270,24 +276,22 @@ function App() {
         }
       }
 
-      // 2) Resolve a nice display name if OpenWeather reverse geocoding key is available; otherwise fall back
+      // 2) Resolve a nice display name via backend proxy reverse geocoding
       let displayName = null;
       try {
-        const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
-        if (apiKey) {
-          const lang = language || 'en';
-          const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${location.lat}&lon=${location.lon}&limit=1&appid=${apiKey}&lang=${encodeURIComponent(lang)}`;
-          const response = await fetch(url);
-          if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const g = data[0];
-              const localName = (g.local_names && g.local_names[lang]) ? g.local_names[lang] : g.name;
-              const parts = [localName];
-              if (g.state && g.state !== g.name) parts.push(g.state);
-              if (g.country) parts.push(g.country);
-              displayName = parts.filter(Boolean).join(', ');
-            }
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+        const lang = language || 'en';
+        const url = `${apiBase}/openweather/geo/1.0/reverse?lat=${location.lat}&lon=${location.lon}&limit=1&lang=${encodeURIComponent(lang)}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const g = data[0];
+            const localName = (g.local_names && g.local_names[lang]) ? g.local_names[lang] : g.name;
+            const parts = [localName];
+            if (g.state && g.state !== g.name) parts.push(g.state);
+            if (g.country) parts.push(g.country);
+            displayName = parts.filter(Boolean).join(', ');
           }
         }
       } catch {}
@@ -484,7 +488,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center transition-all duration-1000" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #14b8a6 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center transition-all duration-1000" style={{ background: 'linear-gradient(180deg, #A8B8C8 0%, #7FA9C4 40%, #C4B8A8 80%, #D4C4B0 100%)' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -561,6 +565,7 @@ function App() {
             humidity={weatherData?.main?.humidity}
             windSpeed={weatherData?.wind?.speed}
             isNight={isNight}
+            timeOfDay={timeOfDay}
             cloudCoverage={weatherData?.clouds?.all ? weatherData.clouds.all / 100 : 0}
             sunrise={weatherData?.sys?.sunrise ? weatherData.sys.sunrise * 1000 : undefined}
             sunset={weatherData?.sys?.sunset ? weatherData.sys.sunset * 1000 : undefined}

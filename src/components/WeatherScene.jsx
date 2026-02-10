@@ -9,14 +9,19 @@ import LightingSection from './scene/LightingSection';
 import SkySection from './scene/SkySection';
 import CelestialBodiesSection from './scene/CelestialBodiesSection';
 import WeatherEffectsSection from './scene/WeatherEffectsSection';
+import { getCloudParams } from '../utils/timeOfDayVisuals';
 
 // Dynamic Clouds
-function DynamicClouds({ coverage = 0.5, isStormy = false, opacity }) {
+function DynamicClouds({ coverage = 0.5, isStormy = false, opacity, timeOfDay = 'day' }) {
   const groupRef = useRef(null);
   const cloudCount = Math.floor(coverage * 8) + 2;
   
-  // Use custom opacity or default based on storm status
-  const cloudOpacity = opacity !== undefined ? opacity : (isStormy ? 0.8 : 0.4);
+  // Get cloud parameters from unified system
+  const cloudParams = getCloudParams(timeOfDay);
+  
+  // Use custom opacity or default from system
+  const cloudOpacity = opacity !== undefined ? opacity : cloudParams.opacity;
+  const cloudColor = isStormy ? "#7fa4d2" : cloudParams.color;
 
   useFrame((state) => {
     if (groupRef.current) {
@@ -40,7 +45,7 @@ function DynamicClouds({ coverage = 0.5, isStormy = false, opacity }) {
           ]}
           scale={Math.random() * 2 + 1}
           opacity={cloudOpacity}
-          color={isStormy ? "#7fa4d2" : "#cfe7ff"}
+          color={cloudColor}
           speed={0.01}
         />
       ))}
@@ -142,6 +147,7 @@ export default function WeatherScene({
   humidity = 50, 
   windSpeed = 5, 
   isNight = false,
+  timeOfDay = 'day', // 'sunrise' | 'day' | 'sunset' | 'night'
   cloudCoverage = 0.5,
   mode = '3d' // '3d' | 'css'
 }) {
@@ -149,11 +155,10 @@ export default function WeatherScene({
   const weatherCondition = weather?.toLowerCase() || 'clear';
   const backgroundMoonSize = 64;
   
-  // Time detection for sunrise/sunset
-  const hour = new Date().getHours();
-  const isSunrise = hour >= 5 && hour < 7;
-  const isSunset = hour >= 18 && hour < 20;
-  const isGoldenHour = isSunrise || isSunset;
+  // Golden hour detection from timeOfDay
+  const isGoldenHour = timeOfDay === 'sunrise' || timeOfDay === 'sunset';
+  const isSunrise = timeOfDay === 'sunrise';
+  const isSunset = timeOfDay === 'sunset';
   
   // Determine weather effects
   const isRaining = weatherCondition.includes('rain') || weatherCondition.includes('drizzle');
@@ -212,14 +217,15 @@ export default function WeatherScene({
       style={{ background: 'transparent' }}
     >
       <LightingSection
-        isNight={isNight}
+        timeOfDay={timeOfDay}
+        weatherCondition={weatherCondition}
         isRaining={isRaining}
-        isGoldenHour={isGoldenHour}
         isMistyCondition={isMistyCondition}
       />
 
       <SkySection
         isNight={isNight}
+        timeOfDay={timeOfDay}
         isRaining={isRaining}
         isSnowing={isSnowing}
         isCloudy={isCloudy}
@@ -254,6 +260,7 @@ export default function WeatherScene({
             coverage={Math.max(cloudCoverage, isRaining ? 0.9 : 0.6)}
             isStormy={true}
             opacity={isGoldenHour ? 0.4 : undefined}
+            timeOfDay={timeOfDay}
           />
         )}
         renderFog={() => (
