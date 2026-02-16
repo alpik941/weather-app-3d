@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:proxy": "node server/proxy.js",
+    "start": "node server/proxy.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -13,6 +15,8 @@
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2",
     "framer-motion": "^10.16.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",

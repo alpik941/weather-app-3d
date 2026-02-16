@@ -12,33 +12,33 @@ export default function WeatherMap({ isOpen, onClose, lat, lon, city }) {
   const [zoom, setZoom] = useState(8);
   const intervalRef = useRef(null);
 
-  const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
   // Weather layer configurations
   const weatherLayers = {
     temp: {
       name: 'Temperature',
-      url: `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+      url: `${apiBase}/openweather-tile/map/temp_new/{z}/{x}/{y}.png`,
       description: 'Temperature overlay'
     },
     precipitation: {
       name: 'Precipitation',
-      url: `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+      url: `${apiBase}/openweather-tile/map/precipitation_new/{z}/{x}/{y}.png`,
       description: 'Precipitation intensity'
     },
     wind: {
       name: 'Wind',
-      url: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+      url: `${apiBase}/openweather-tile/map/wind_new/{z}/{x}/{y}.png`,
       description: 'Wind speed and direction'
     },
     clouds: {
       name: 'Clouds',
-      url: `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+      url: `${apiBase}/openweather-tile/map/clouds_new/{z}/{x}/{y}.png`,
       description: 'Cloud coverage'
     },
     pressure: {
       name: 'Pressure',
-      url: `https://tile.openweathermap.org/map/pressure_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+      url: `${apiBase}/openweather-tile/map/pressure_new/{z}/{x}/{y}.png`,
       description: 'Atmospheric pressure'
     }
   };

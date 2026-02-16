@@ -65,11 +65,13 @@ npm run ios
 A unified design token system for consistent visual styling across Three.js scenes and CSS/React components.
 
 **Quick links:**
+
 - 📖 [**Start Here**: Introduction & Quick Start](./docs/TIME_OF_DAY_README.md)
 - 📑 [**Index**: All documentation](./docs/TIME_OF_DAY_INDEX.md)
 - ⚡ [**Cheatsheet**: Developer reference](./docs/CHEATSHEET.md)
 
 **Features:**
+
 - 🌅 4 time periods (sunrise, day, sunset, night) with complete visual presets
 - 🎨 Unified color palettes, lighting, fog, and atmosphere parameters
 - 🌦️ Weather modifiers (cloudy, rainy, misty)
@@ -77,6 +79,7 @@ A unified design token system for consistent visual styling across Three.js scen
 - 📐 Comprehensive reference tables and diagrams
 
 **Usage:**
+
 ```javascript
 import { getTimeOfDayVisuals } from './utils/timeOfDayVisuals';
 
@@ -85,6 +88,36 @@ const visuals = getTimeOfDayVisuals('sunset');
 ```
 
 See [docs/TIME_OF_DAY_INDEX.md](./docs/TIME_OF_DAY_INDEX.md) for complete documentation.
+
+### OptimizedRain Component
+
+An improved rain visualization component with **correct droplet lengths** (0.18-0.28 units instead of 0.6-1.3).
+
+**Quick links:**
+
+- 📖 [**Full Guide**: Complete documentation](./docs/OPTIMIZED_RAIN_GUIDE.md)
+- ⚡ [**Quick Start**: Get started fast](./docs/OPTIMIZED_RAIN_QUICKSTART.md)
+- 📊 [**Implementation Report**: Technical details](./docs/OPTIMIZED_RAIN_IMPLEMENTATION.md)
+- 🧪 [**Demo**: Interactive demo](./public/OptimizedRainDemo.html)
+
+**Key improvements:**
+
+- ✅ Realistic droplet length: 0.18-0.28 units (like real rain)
+- ✅ High performance: 60 FPS with 800 droplets
+- ✅ Wind physics and splash effects
+- ✅ Highly configurable via props
+
+**Usage:**
+
+```jsx
+import OptimizedRain from './components/OptimizedRain';
+
+<Canvas>
+  <OptimizedRain count={800} intensity={1.0} windSpeed={0.3} />
+</Canvas>
+```
+
+See [OPTIMIZED_RAIN_SUMMARY.md](./OPTIMIZED_RAIN_SUMMARY.md) for overview.
 
 ## Next steps
 

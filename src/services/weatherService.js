@@ -642,7 +642,7 @@ export const getWeeklyForecast = async (lat, lon, units = 'metric') => {
         wind_speed_unit: 'ms',
         temperature_unit: 'celsius'
       });
-      const omResponse = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+      const omResponse = await fetch(`${API_BASE_URL}/openmeteo/v1/forecast?${params.toString()}`);
       if (!omResponse.ok) throw new Error('Open-Meteo weekly forecast not found');
       const om = await omResponse.json();
 

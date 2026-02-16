@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OptimizedRain Demo - Улучшенный дождь с правильной длиной капель</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(to bottom, #4a5f7a 0%, #8b9eb3 100%);
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+
+    #controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 12px;
+      color: white;
+      min-width: 320px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+    }
+
+    h2 {
+      margin: 0 0 20px 0;
+      font-size: 1.3em;
+      font-weight: 600;
+      border-bottom: 2px solid #4a90e2;
+      padding-bottom: 10px;
+    }
+
+    .control-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #555;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4a90e2;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4a90e2;
+      cursor: pointer;
+      border: none;
+    }
+
+    select, input[type="color"] {
+      width: 100%;
+      padding: 8px 12px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 6px;
+      font-size: 0.95em;
+      cursor: pointer;
+    }
+
+    .value-display {
+      float: right;
+      color: #4a90e2;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .stats {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 15px 20px;
+      border-radius: 8px;
+      color: white;
+      font-family: monospace;
+      font-size: 0.9em;
+      z-index: 1000;
+    }
+
+    .stats div {
+      margin: 5px 0;
+    }
+
+    .highlight {
+      color: #4a90e2;
+      font-weight: bold;
+    }
+
+    .info {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 8px;
+      color: white;
+      font-size: 0.85em;
+      text-align: center;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div class="stats">
+    <div>FPS: <span id="fps" class="highlight">60</span></div>
+    <div>Капель: <span id="droplets" class="highlight">800</span></div>
+    <div>Брызг: <span id="splashes" class="highlight">0</span></div>
+  </div>
+
+  <div id="controls">
+    <h2>⚙️ Настройки дождя</h2>
+
+    <div class="control-group">
+      <label>
+        Количество капель 
+        <span class="value-display" id="count-value">800</span>
+      </label>
+      <input type="range" id="count" min="200" max="1500" value="800" step="100">
+    </div>
+
+    <div class="control-group">
+      <label>
+        Интенсивность 
+        <span class="value-display" id="intensity-value">1.0</span>
+      </label>
+      <input type="range" id="intensity" min="0.5" max="2.0" value="1.0" step="0.1">
+    </div>
+
+    <div class="control-group">
+      <label>
+        Длина капель 
+        <span class="value-display" id="length-value">0.23</span>
+      </label>
+      <input type="range" id="dropletLength" min="0.18" max="0.28" value="0.23" step="0.01">
+    </div>
+
+    <div class="control-group">
+      <label>
+        Скорость ветра 
+        <span class="value-display" id="wind-value">0.3</span>
+      </label>
+      <input type="range" id="windSpeed" min="0" max="1.0" value="0.3" step="0.05">
+    </div>
+
+    <div class="control-group">
+      <label>
+        Направление ветра 
+        <span class="value-display" id="direction-value">45°</span>
+      </label>
+      <input type="range" id="windDirection" min="0" max="360" value="45" step="15">
+    </div>
+
+    <div class="control-group">
+      <label>Цвет капель</label>
+      <input type="color" id="color" value="#b8d4f0">
+    </div>
+
+    <div class="control-group">
+      <label>Предустановки</label>
+      <select id="preset">
+        <option value="custom">Пользовательская</option>
+        <option value="light">Лёгкий дождь</option>
+        <option value="moderate" selected>Средний дождь</option>
+        <option value="heavy">Сильный ливень</option>
+        <option value="storm">Шторм</option>
+      </select>
+    </div>
+
+    <button id="toggleSplashes">Брызги: ВКЛ</button>
+    <button id="toggleRain">Остановить дождь</button>
+  </div>
+
+  <div class="info">
+    ✅ <strong>Правильная длина капель:</strong> 0.18-0.28 единиц (вместо 0.6-1.3)
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // === НАСТРОЙКА СЦЕНЫ ===
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x8b9eb3, 20, 60);
+
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(0, 5, 15);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // === ОСВЕЩЕНИЕ ===
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(10, 10, 5);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    // === ЗЕМЛЯ ===
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x3a4a5a,
+      roughness: 0.8
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // === ПАРАМЕТРЫ ДОЖДЯ ===
+    let rainParams = {
+      count: 800,
+      intensity: 1.0,
+      windSpeed: 0.3,
+      windDirection: Math.PI / 4,
+      enabled: true,
+      area: { x: 40, z: 40, height: 25 },
+      splashEnabled: true,
+      color: '#b8d4f0',
+      dropletLength: 0.23,
+    };
+
+    // === СОЗДАНИЕ ДОЖДЯ ===
+    let rainData = [];
+    let splashData = [];
+    let rainMesh, splashMesh;
+    let time = 0;
+    let splashIndex = 0;
+
+    function createRain() {
+      // Удаляем старый дождь
+      if (rainMesh) scene.remove(rainMesh);
+      if (splashMesh) scene.remove(splashMesh);
+
+      // Генерация данных для капель
+      rainData = [];
+      for (let i = 0; i < rainParams.count; i++) {
+        rainData.push({
+          startX: (Math.random() - 0.5) * rainParams.area.x,
+          startZ: (Math.random() - 0.5) * rainParams.area.z,
+          startY: Math.random() * rainParams.area.height + rainParams.area.height * 0.5,
+          x: 0, y: 0, z: 0,
+          speed: 15 + Math.random() * 10,
+          length: rainParams.dropletLength * (0.8 + Math.random() * 0.4),
+          thickness: 0.012 + Math.random() * 0.008,
+          rotation: Math.random() * Math.PI * 2,
+          offset: Math.random() * 100,
+        });
+      }
+
+      // Геометрия и материал капли
+      const dropletGeometry = new THREE.CylinderGeometry(0.01, 0.008, 1, 4, 1);
+      const dropletMaterial = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(rainParams.color),
+        transparent: true,
+        opacity: 0.6,
+        roughness: 0.15,
+        metalness: 0.05,
+        envMapIntensity: 1.2,
+        depthWrite: true,
+        side: THREE.DoubleSide,
+      });
+
+      rainMesh = new THREE.InstancedMesh(
+        dropletGeometry,
+        dropletMaterial,
+        rainParams.count
+      );
+      rainMesh.castShadow = true;
+
+      // Инициализация позиций
+      const dummy = new THREE.Object3D();
+      rainData.forEach((drop, i) => {
+        drop.x = drop.startX;
+        drop.y = drop.startY;
+        drop.z = drop.startZ;
+
+        dummy.position.set(drop.x, drop.y, drop.z);
+        dummy.rotation.set(0, 0, drop.rotation);
+        dummy.scale.set(drop.thickness * 100, drop.length, drop.thickness * 100);
+        dummy.updateMatrix();
+        rainMesh.setMatrixAt(i, dummy.matrix);
+      });
+
+      rainMesh.instanceMatrix.needsUpdate = true;
+      scene.add(rainMesh);
+
+      // Брызги
+      if (rainParams.splashEnabled) {
+        const maxSplashes = Math.min(rainParams.count * 5, 2500);
+        splashData = [];
+        
+        for (let i = 0; i < maxSplashes; i++) {
+          splashData.push({
+            x: 0, y: -1000, z: 0,
+            vx: 0, vy: 0, vz: 0,
+            life: 0,
+            maxLife: 0.25 + Math.random() * 0.15,
+            size: 0.018 + Math.random() * 0.012,
+          });
+        }
+
+        const splashGeometry = new THREE.SphereGeometry(1, 4, 4);
+        const splashMaterial = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(rainParams.color).multiplyScalar(1.15),
+          transparent: true,
+          opacity: 0.7,
+          depthWrite: false,
+        });
+
+        splashMesh = new THREE.InstancedMesh(
+          splashGeometry,
+          splashMaterial,
+          maxSplashes
+        );
+        scene.add(splashMesh);
+      }
+    }
+
+    // Создание брызг
+    function createSplash(x, y, z) {
+      if (!rainParams.splashEnabled || !splashMesh) return;
+
+      const splashCount = 4 + Math.floor(Math.random() * 3);
+      
+      for (let i = 0; i < splashCount; i++) {
+        const idx = splashIndex % splashData.length;
+        const splash = splashData[idx];
+        
+        const angle = (Math.PI * 2 * i) / splashCount + Math.random() * 0.3;
+        const speed = 0.5 + Math.random() * 0.6;
+        
+        splash.x = x + (Math.random() - 0.5) * 0.05;
+        splash.y = y + 0.02;
+        splash.z = z + (Math.random() - 0.5) * 0.05;
+        splash.vx = Math.cos(angle) * speed;
+        splash.vy = 1.2 + Math.random() * 1.0;
+        splash.vz = Math.sin(angle) * speed;
+        splash.life = 0;
+        
+        splashIndex++;
+      }
+    }
+
+    createRain();
+
+    // === FPS СЧЁТЧИК ===
+    let lastTime = performance.now();
+    let frames = 0;
+    let fps = 60;
+
+    // === АНИМАЦИЯ ===
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now();
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      frames++;
+      if (frames % 10 === 0) {
+        fps = Math.round(1 / delta);
+        document.getElementById('fps').textContent = fps;
+      }
+
+      if (!rainParams.enabled) {
+        renderer.render(scene, camera);
+        controls.update();
+        return;
+      }
+
+      time += delta;
+      const dummy = new THREE.Object3D();
+
+      // Анимация капель
+      let activeSplashes = 0;
+      rainData.forEach((drop, i) => {
+        drop.y -= drop.speed * delta * rainParams.intensity;
+        
+        const turbulence = Math.sin(time * 2 + drop.offset) * 0.015;
+        const turbulenceZ = Math.cos(time * 1.7 + drop.offset) * 0.01;
+        
+        drop.x += (turbulence + Math.cos(rainParams.windDirection) * rainParams.windSpeed * delta * 2);
+        drop.z += (turbulenceZ + Math.sin(rainParams.windDirection) * rainParams.windSpeed * delta * 2);
+
+        if (drop.y < 0) {
+          createSplash(drop.x, 0, drop.z);
+          drop.y = drop.startY + Math.random() * 5;
+          drop.x = drop.startX + (Math.random() - 0.5) * 3;
+          drop.z = drop.startZ + (Math.random() - 0.5) * 3;
+        }
+
+        dummy.position.set(drop.x, drop.y, drop.z);
+        const velocityAngle = Math.atan2(
+          Math.cos(rainParams.windDirection) * rainParams.windSpeed,
+          drop.speed * 0.1
+        );
+        dummy.rotation.set(velocityAngle * 0.3, 0, drop.rotation);
+        dummy.scale.set(drop.thickness * 100, drop.length, drop.thickness * 100);
+        dummy.updateMatrix();
+        rainMesh.setMatrixAt(i, dummy.matrix);
+      });
+
+      rainMesh.instanceMatrix.needsUpdate = true;
+
+      // Анимация брызг
+      if (rainParams.splashEnabled && splashMesh) {
+        splashData.forEach((splash, i) => {
+          if (splash.life < splash.maxLife) {
+            splash.life += delta;
+            splash.x += splash.vx * delta;
+            splash.y += splash.vy * delta;
+            splash.z += splash.vz * delta;
+            splash.vy -= 9.8 * delta;
+            
+            const progress = splash.life / splash.maxLife;
+            const scale = splash.size * (1 - progress * 0.8);
+            
+            dummy.position.set(splash.x, Math.max(splash.y, 0), splash.z);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            splashMesh.setMatrixAt(i, dummy.matrix);
+            activeSplashes++;
+          } else {
+            dummy.position.set(0, -1000, 0);
+            dummy.scale.set(0.001, 0.001, 0.001);
+            dummy.updateMatrix();
+            splashMesh.setMatrixAt(i, dummy.matrix);
+          }
+        });
+
+        splashMesh.instanceMatrix.needsUpdate = true;
+      }
+
+      document.getElementById('droplets').textContent = rainParams.count;
+      document.getElementById('splashes').textContent = activeSplashes;
+
+      renderer.render(scene, camera);
+      controls.update();
+    }
+
+    animate();
+
+    // === УПРАВЛЕНИЕ ===
+    const presets = {
+      light: { count: 400, intensity: 0.7, windSpeed: 0.2, dropletLength: 0.18 },
+      moderate: { count: 800, intensity: 1.0, windSpeed: 0.3, dropletLength: 0.23 },
+      heavy: { count: 1200, intensity: 1.8, windSpeed: 0.6, dropletLength: 0.25 },
+      storm: { count: 1000, intensity: 2.0, windSpeed: 0.9, dropletLength: 0.28 },
+    };
+
+    document.getElementById('preset').addEventListener('change', (e) => {
+      const preset = presets[e.target.value];
+      if (preset) {
+        Object.assign(rainParams, preset);
+        document.getElementById('count').value = preset.count;
+        document.getElementById('intensity').value = preset.intensity;
+        document.getElementById('windSpeed').value = preset.windSpeed;
+        document.getElementById('dropletLength').value = preset.dropletLength;
+        updateDisplayValues();
+        createRain();
+      }
+    });
+
+    function updateDisplayValues() {
+      document.getElementById('count-value').textContent = rainParams.count;
+      document.getElementById('intensity-value').textContent = rainParams.intensity.toFixed(1);
+      document.getElementById('length-value').textContent = rainParams.dropletLength.toFixed(2);
+      document.getElementById('wind-value').textContent = rainParams.windSpeed.toFixed(2);
+      document.getElementById('direction-value').textContent = 
+        Math.round((rainParams.windDirection * 180) / Math.PI) + '°';
+    }
+
+    document.getElementById('count').addEventListener('input', (e) => {
+      rainParams.count = parseInt(e.target.value);
+      createRain();
+      updateDisplayValues();
+    });
+
+    document.getElementById('intensity').addEventListener('input', (e) => {
+      rainParams.intensity = parseFloat(e.target.value);
+      updateDisplayValues();
+    });
+
+    document.getElementById('dropletLength').addEventListener('input', (e) => {
+      rainParams.dropletLength = parseFloat(e.target.value);
+      createRain();
+      updateDisplayValues();
+    });
+
+    document.getElementById('windSpeed').addEventListener('input', (e) => {
+      rainParams.windSpeed = parseFloat(e.target.value);
+      updateDisplayValues();
+    });
+
+    document.getElementById('windDirection').addEventListener('input', (e) => {
+      rainParams.windDirection = (parseFloat(e.target.value) * Math.PI) / 180;
+      updateDisplayValues();
+    });
+
+    document.getElementById('color').addEventListener('input', (e) => {
+      rainParams.color = e.target.value;
+      createRain();
+    });
+
+    document.getElementById('toggleSplashes').addEventListener('click', (e) => {
+      rainParams.splashEnabled = !rainParams.splashEnabled;
+      e.target.textContent = `Брызги: ${rainParams.splashEnabled ? 'ВКЛ' : 'ВЫКЛ'}`;
+      createRain();
+    });
+
+    document.getElementById('toggleRain').addEventListener('click', (e) => {
+      rainParams.enabled = !rainParams.enabled;
+      e.target.textContent = rainParams.enabled ? 'Остановить дождь' : 'Запустить дождь';
+    });
+
+    // Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

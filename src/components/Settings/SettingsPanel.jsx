@@ -46,12 +46,10 @@ export default function SettingsPanel({ isOpen, onClose, onCitySelect }) {
 
   // New: API key diagnostics
   const apiStatus = useMemo(() => {
-    const weatherApi = !!(import.meta.env && import.meta.env.VITE_WEATHERAPI_KEY);
-    const openWeather = !!(import.meta.env && import.meta.env.VITE_OPENWEATHER_API_KEY);
+    const apiBase = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || '/api';
     return {
-      weatherApi,
-      openWeather,
-      ok: weatherApi || openWeather,
+      apiBase,
+      ok: !!apiBase,
     };
   }, []);
 

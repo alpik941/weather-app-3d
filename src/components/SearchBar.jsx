@@ -34,7 +34,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
   const searchTimeoutRef = useRef(null);
   const inputRef = useRef(null);
 
-  const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(searchQuery)}&limit=5&appid=${API_KEY}`
+        `${apiBase}/openweather/geo/1.0/direct?q=${encodeURIComponent(searchQuery)}&limit=5`
       );
       
       if (response.ok) {
@@ -80,7 +80,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
     } finally {
       setLoading(false);
     }
-  }, [API_KEY]);
+  }, [apiBase]);
 
   // Handle input change with debouncing
   const handleInputChange = (e) => {
