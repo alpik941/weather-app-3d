@@ -2,6 +2,8 @@
 // SECURITY: Provider API keys must not be shipped to the browser.
 // All provider requests go through a backend proxy (default: /api).
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const OPEN_METEO_PUBLIC_BASE_URL = 'https://api.open-meteo.com/v1';
+const OPEN_METEO_GEOCODING_BASE_URL = 'https://geocoding-api.open-meteo.com/v1';
 
 // Provider base URLs (proxied)
 const WEATHERAPI_BASE_URL = `${API_BASE_URL}/weatherapi`;
@@ -10,6 +12,239 @@ const SUNRISE_SUNSET_BASE_URL = 'https://api.sunrisesunset.io/json';
 
 // Import wind chill calculator
 import { calculateWindChill } from '../utils/windSpeed.js';
+
+const isGitHubPagesRuntime = () => {
+  try {
+    return typeof window !== 'undefined' && /github\.io$/i.test(window.location.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const weatherCodeToCondition = (code) => {
+  const map = {
+    0: ['Clear', 'clear sky'],
+    1: ['Clouds', 'mainly clear'],
+    2: ['Clouds', 'partly cloudy'],
+    3: ['Clouds', 'overcast'],
+    45: ['Fog', 'fog'],
+    48: ['Fog', 'depositing rime fog'],
+    51: ['Rain', 'light drizzle'],
+    53: ['Rain', 'moderate drizzle'],
+    55: ['Rain', 'dense drizzle'],
+    56: ['Rain', 'light freezing drizzle'],
+    57: ['Rain', 'dense freezing drizzle'],
+    61: ['Rain', 'slight rain'],
+    63: ['Rain', 'moderate rain'],
+    65: ['Rain', 'heavy rain'],
+    66: ['Rain', 'light freezing rain'],
+    67: ['Rain', 'heavy freezing rain'],
+    71: ['Snow', 'slight snow'],
+    73: ['Snow', 'moderate snow'],
+    75: ['Snow', 'heavy snow'],
+    77: ['Snow', 'snow grains'],
+    80: ['Rain', 'slight rain showers'],
+    81: ['Rain', 'rain showers'],
+    82: ['Rain', 'violent rain showers'],
+    85: ['Snow', 'snow showers'],
+    86: ['Snow', 'heavy snow showers'],
+    95: ['Thunderstorm', 'thunderstorm'],
+    96: ['Thunderstorm', 'thunderstorm with hail'],
+    99: ['Thunderstorm', 'heavy thunderstorm with hail']
+  };
+  const [main, description] = map[code] || ['Clear', 'clear sky'];
+  return { main, description };
+};
+
+const geocodeCityOpenMeteo = async (city) => {
+  const params = new URLSearchParams({
+    name: city,
+    count: '1',
+    language: 'en',
+    format: 'json'
+  });
+  const response = await fetch(`${OPEN_METEO_GEOCODING_BASE_URL}/search?${params.toString()}`);
+  if (!response.ok) throw new Error('City geocoding failed');
+  const data = await response.json();
+  const result = data?.results?.[0];
+  if (!result) throw new Error('City not found');
+  return result;
+};
+
+const reverseGeocodeOpenMeteo = async (lat, lon) => {
+  try {
+    const params = new URLSearchParams({
+      latitude: String(lat),
+      longitude: String(lon),
+      language: 'en',
+      format: 'json'
+    });
+    const response = await fetch(`${OPEN_METEO_GEOCODING_BASE_URL}/reverse?${params.toString()}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data?.results?.[0] || null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchOpenMeteoBundle = async (lat, lon, units = 'metric') => {
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    timezone: 'auto',
+    forecast_days: '7',
+    temperature_unit: 'celsius',
+    wind_speed_unit: 'ms',
+    current: [
+      'temperature_2m',
+      'relative_humidity_2m',
+      'apparent_temperature',
+      'is_day',
+      'weather_code',
+      'cloud_cover',
+      'surface_pressure',
+      'wind_speed_10m',
+      'wind_direction_10m'
+    ].join(','),
+    hourly: [
+      'temperature_2m',
+      'relative_humidity_2m',
+      'apparent_temperature',
+      'precipitation_probability',
+      'weather_code',
+      'wind_speed_10m',
+      'wind_direction_10m',
+      'cloud_cover',
+      'visibility'
+    ].join(','),
+    daily: [
+      'weather_code',
+      'temperature_2m_max',
+      'temperature_2m_min',
+      'sunrise',
+      'sunset',
+      'precipitation_probability_max',
+      'wind_speed_10m_max'
+    ].join(',')
+  });
+  const response = await fetch(`${OPEN_METEO_PUBLIC_BASE_URL}/forecast?${params.toString()}`);
+  if (!response.ok) throw new Error('Open-Meteo forecast failed');
+  return await response.json();
+};
+
+const buildWeatherDataFromOpenMeteo = (bundle, place) => {
+  const current = bundle.current || {};
+  const daily = bundle.daily || {};
+  const currentUnits = bundle.current_units || {};
+  const weather = weatherCodeToCondition(current.weather_code);
+  return {
+    name: place?.name || 'Unknown location',
+    sys: {
+      country: place?.country_code || place?.country || '',
+      sunrise: daily.sunrise?.[0] ? Math.floor(new Date(daily.sunrise[0]).getTime() / 1000) : undefined,
+      sunset: daily.sunset?.[0] ? Math.floor(new Date(daily.sunset[0]).getTime() / 1000) : undefined,
+      tz_id: bundle.timezone
+    },
+    timezone: bundle.timezone,
+    main: {
+      temp: current.temperature_2m,
+      feels_like: current.apparent_temperature,
+      temp_min: daily.temperature_2m_min?.[0],
+      temp_max: daily.temperature_2m_max?.[0],
+      humidity: current.relative_humidity_2m,
+      pressure: current.surface_pressure
+    },
+    weather: [{
+      main: weather.main,
+      description: weather.description,
+      icon: ''
+    }],
+    wind: {
+      speed: current.wind_speed_10m,
+      deg: current.wind_direction_10m
+    },
+    visibility: undefined,
+    clouds: { all: current.cloud_cover || 0 },
+    coord: { lat: place?.latitude, lon: place?.longitude },
+    units: currentUnits
+  };
+};
+
+const buildForecastDataFromOpenMeteo = (bundle, place) => {
+  const hourly = bundle.hourly || {};
+  const list = [];
+  const times = hourly.time || [];
+  for (let i = 0; i < times.length; i += 3) {
+    const weather = weatherCodeToCondition(hourly.weather_code?.[i]);
+    list.push({
+      dt: Math.floor(new Date(times[i]).getTime() / 1000),
+      main: {
+        temp: hourly.temperature_2m?.[i],
+        temp_min: hourly.temperature_2m?.[i],
+        temp_max: hourly.temperature_2m?.[i],
+        humidity: hourly.relative_humidity_2m?.[i]
+      },
+      weather: [{ main: weather.main, description: weather.description, icon: '' }],
+      wind: { speed: hourly.wind_speed_10m?.[i] || 0 },
+      dt_txt: times[i],
+      timezone: bundle.timezone
+    });
+  }
+  return {
+    list,
+    city: {
+      name: place?.name || 'Unknown location',
+      country: place?.country_code || place?.country || '',
+      timezone: bundle.timezone
+    },
+    timezone: bundle.timezone
+  };
+};
+
+const buildHourlyDataFromOpenMeteo = (bundle) => {
+  const hourly = bundle.hourly || {};
+  const times = hourly.time || [];
+  return {
+    hourly: times.map((time, index) => {
+      const weather = weatherCodeToCondition(hourly.weather_code?.[index]);
+      return {
+        dt: Math.floor(new Date(time).getTime() / 1000),
+        temp: hourly.temperature_2m?.[index],
+        feels_like: hourly.apparent_temperature?.[index],
+        humidity: hourly.relative_humidity_2m?.[index],
+        weather: [{ main: weather.main, description: weather.description, icon: '' }],
+        wind_speed: hourly.wind_speed_10m?.[index] || 0,
+        pop: ((hourly.precipitation_probability?.[index] || 0) / 100),
+        timezone: bundle.timezone
+      };
+    }),
+    timezone: bundle.timezone
+  };
+};
+
+const buildWeeklyDataFromOpenMeteo = (bundle) => {
+  const daily = bundle.daily || {};
+  const times = daily.time || [];
+  return {
+    daily: times.map((time, index) => {
+      const weather = weatherCodeToCondition(daily.weather_code?.[index]);
+      return {
+        dt: Math.floor(new Date(time).getTime() / 1000),
+        temp: {
+          min: daily.temperature_2m_min?.[index],
+          max: daily.temperature_2m_max?.[index]
+        },
+        weather: [{ main: weather.main, description: weather.description, icon: '' }],
+        humidity: undefined,
+        wind_speed: daily.wind_speed_10m_max?.[index] || 0,
+        pop: ((daily.precipitation_probability_max?.[index] || 0) / 100),
+        timezone: bundle.timezone
+      };
+    }),
+    timezone: bundle.timezone
+  };
+};
 
 // --- Weather Data Validation System ---
 // Global validation errors array for modal display
@@ -345,6 +580,9 @@ const owCategory = (idx) => {
  * @returns {Promise<import('../types/weather.js').AirQuality|null>}
  */
 export const getAirQuality = async (lat, lon) => {
+  if (isGitHubPagesRuntime()) {
+    return null;
+  }
   try {
     const response = await fetch(
       `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=yes&alerts=no`
@@ -424,6 +662,11 @@ export const getWeatherData_legacy = async (city, units = 'metric') => {
 
 // Web API: expose unified names expected by the app
 export const getWeatherData = async (city, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    const place = await geocodeCityOpenMeteo(city);
+    const bundle = await fetchOpenMeteoBundle(place.latitude, place.longitude, units);
+    return buildWeatherDataFromOpenMeteo(bundle, place);
+  }
   return getWeatherData_legacy(city, units);
 };
 
@@ -533,6 +776,11 @@ export const getForecastData_legacy = async (city, units = 'metric') => {
 };
 
 export const getForecastData = async (city, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    const place = await geocodeCityOpenMeteo(city);
+    const bundle = await fetchOpenMeteoBundle(place.latitude, place.longitude, units);
+    return buildForecastDataFromOpenMeteo(bundle, place);
+  }
   return getForecastData_legacy(city, units);
 };
 
@@ -544,6 +792,10 @@ export const getForecastData = async (city, units = 'metric') => {
  * @returns {Promise<HourlyForecast>} Hourly forecast data
  */
 export const getHourlyForecast = async (lat, lon, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    const bundle = await fetchOpenMeteoBundle(lat, lon, units);
+    return buildHourlyDataFromOpenMeteo(bundle);
+  }
   try {
     const response = await fetch(
       `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=3&aqi=no&alerts=no`
@@ -588,6 +840,10 @@ export const getHourlyForecast = async (lat, lon, units = 'metric') => {
  * @returns {Promise<Object>} Weekly forecast data
  */
 export const getWeeklyForecast = async (lat, lon, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    const bundle = await fetchOpenMeteoBundle(lat, lon, units);
+    return buildWeeklyDataFromOpenMeteo(bundle);
+  }
   try {
     const response = await fetch(
       `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=7&aqi=no&alerts=no`
@@ -759,6 +1015,9 @@ export const validateAlertConsistency = (currentWeather, alerts) => {
  * @returns {Promise<WeatherAlert[]>} Weather alerts
  */
 export const getWeatherAlerts = async (lat, lon) => {
+  if (isGitHubPagesRuntime()) {
+    return [];
+  }
   try {
     const response = await fetch(
       `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=no&alerts=yes`
@@ -902,6 +1161,20 @@ const classifyAlertSeverity = (event, description) => {
  * @returns {Promise<ActivityForecast>} Activity forecast data
  */
 export const getActivityForecast = async (lat, lon, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    return {
+      pollen: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      fishing: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      waterRecreation: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      gardening: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      running: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      golf: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      hunting: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      kayaking: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      yachting: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' },
+      clothing: { score: 50, description: 'Limited on static hosting', recommendation: 'Check local conditions' }
+    };
+  }
   try {
     const response = await fetch(
       `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=yes&alerts=no`
@@ -1088,6 +1361,11 @@ export const getCurrentLocation = () => {
  * @param {'metric'|'imperial'} units
  */
 export const getWeatherDataByCoords = async (lat, lon, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    const bundle = await fetchOpenMeteoBundle(lat, lon, units);
+    const place = await reverseGeocodeOpenMeteo(lat, lon);
+    return buildWeatherDataFromOpenMeteo(bundle, place || { latitude: lat, longitude: lon, name: `${lat.toFixed(3)}, ${lon.toFixed(3)}`, country: '' });
+  }
   try {
     const response = await fetch(
       `${WEATHERAPI_BASE_URL}/forecast.json?q=${lat},${lon}&days=1&aqi=no&alerts=no`
@@ -1112,6 +1390,11 @@ export const getWeatherDataByCoords = async (lat, lon, units = 'metric') => {
  * @param {'metric'|'imperial'} units
  */
 export const getForecastDataByCoords = async (lat, lon, units = 'metric') => {
+  if (isGitHubPagesRuntime()) {
+    const bundle = await fetchOpenMeteoBundle(lat, lon, units);
+    const place = await reverseGeocodeOpenMeteo(lat, lon);
+    return buildForecastDataFromOpenMeteo(bundle, place || { latitude: lat, longitude: lon, name: `${lat.toFixed(3)}, ${lon.toFixed(3)}`, country: '' });
+  }
   try {
     // WeatherAPI free tier provides up to 3 days. We'll still try and convert; backfill handled in UI.
     const response = await fetch(
