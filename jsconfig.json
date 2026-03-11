@@ -17,6 +17,10 @@
     "baseUrl": "."
   },
   "include": [
-    "src"
+    "src",
+    "vite.config.ts",
+    "eslint.config.js",
+    "postcss.config.js",
+    "tailwind.config.js"
   ]
 }
