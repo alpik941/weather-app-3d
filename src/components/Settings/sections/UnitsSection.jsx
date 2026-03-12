@@ -19,14 +19,14 @@ export default function UnitsSection({
     <>
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('appearance')}</h3>
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-          <div className="flex items-center">
+        <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center">
             {theme === 'light' ? (
               <Sun className="w-5 h-5 text-yellow-500 mr-3" />
             ) : (
               <Moon className="w-5 h-5 text-blue-400 mr-3" />
             )}
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="min-w-0 break-words text-gray-700 dark:text-gray-300">
               {theme === 'light' ? t('lightMode') : t('darkMode')}
             </span>
           </div>
@@ -47,10 +47,10 @@ export default function UnitsSection({
 
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('temperatureHeader')}</h3>
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-          <div className="flex items-center">
+        <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center">
             <Thermometer className="w-5 h-5 text-red-500 mr-3" />
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="min-w-0 break-words text-gray-700 dark:text-gray-300">
               {temperatureUnit === 'celsius' ? t('celsiusUnit') : t('fahrenheitUnit')}
             </span>
           </div>
@@ -82,15 +82,15 @@ export default function UnitsSection({
             <button
               key={unit.value}
               onClick={() => setWindSpeedUnit(unit.value)}
-              className={`w-full flex items-center p-3 rounded-xl transition-colors text-left ${
+              className={`w-full flex items-start gap-3 p-3 rounded-xl transition-colors text-left ${
                 windSpeedUnit === unit.value
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
-              <span>{unit.label}</span>
+              <span className="min-w-0 flex-1 break-words text-sm sm:text-base">{unit.label}</span>
               {windSpeedUnit === unit.value && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full ml-auto" />
+                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
               )}
             </button>
           ))}
@@ -101,9 +101,9 @@ export default function UnitsSection({
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('visualizations') || 'Visualizations'}</h3>
         <div className="space-y-3">
           <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700 dark:text-gray-300">{t('apiKeyStatus') || 'API Key Status'}</span>
-              <span className={`px-2 py-1 rounded-full text-xs ${apiStatus.ok ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm text-gray-700 dark:text-gray-300 break-words">{t('apiKeyStatus') || 'API Key Status'}</span>
+              <span className={`inline-flex w-fit px-2 py-1 rounded-full text-xs ${apiStatus.ok ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                 {apiStatus.ok ? (t('apiOk') || 'OK') : (t('apiMissing') || 'Missing')}
               </span>
             </div>
@@ -131,16 +131,16 @@ export default function UnitsSection({
             <button
               key={lang.code}
               onClick={() => setLanguage(lang.code)}
-              className={`w-full flex items-center p-3 rounded-xl transition-colors ${
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
                 language === lang.code
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
-              <span className="text-xl mr-3">{lang.flag}</span>
-              <span>{lang.name}</span>
+              <span className="text-xl shrink-0">{lang.flag}</span>
+              <span className="min-w-0 flex-1 break-words text-left">{lang.name}</span>
               {language === lang.code && (
-                <Globe className="w-4 h-4 ml-auto" />
+                <Globe className="ml-auto h-4 w-4 shrink-0" />
               )}
             </button>
           ))}
@@ -157,19 +157,19 @@ function TimeFormatSection({ t }) {
   return (
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('timeFormat')}</h3>
-      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-between">
-        <div className="flex flex-col">
+      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col">
           <span className="text-gray-700 dark:text-gray-300 font-medium">{t('timeDisplay')}</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span className="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">
             {currentMode === '12h' && t('timeFormat12hDesc')}
             {currentMode === '24h' && t('timeFormat24hDesc')}
             {currentMode === 'auto' && t('timeFormatAutoDesc')}
           </span>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:space-x-2 sm:gap-2">
           <button
             onClick={toggleHour12}
-            className="px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            className="px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors whitespace-normal break-words"
           >
             {t('cycle')} ({nextLabel})
           </button>
@@ -199,10 +199,10 @@ function TimeSystemFlags({ t }) {
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('advancedTime')}</h3>
       <div className="space-y-3">
         {showRollback && (
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-between">
-            <div className="text-sm text-gray-700 dark:text-gray-300">
+          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-gray-700 dark:text-gray-300 min-w-0">
               {t('rollbackMode')}
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('rollbackDesc')}</div>
+              <div className="mt-1 break-words text-xs text-gray-500 dark:text-gray-400">{t('rollbackDesc')}</div>
             </div>
             <button
               onClick={() => setRollback(!rollback)}

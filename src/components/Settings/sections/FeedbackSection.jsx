@@ -21,31 +21,31 @@ export default function FeedbackSection({
         <div className="space-y-3">
           <button
             onClick={() => window.open(`mailto:${supportEmail}`,'_blank')}
-            className="w-full flex items-center p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-left"
           >
-            <Mail className="w-5 h-5 mr-3" />
-            <span>{t('supportEmail')}</span>
+            <Mail className="h-5 w-5 shrink-0" />
+            <span className="min-w-0 break-words">{t('supportEmail')}</span>
           </button>
           <button
             onClick={() => setShowFeedback(true)}
-            className="w-full flex items-center p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-left"
           >
-            <MessageSquare className="w-5 h-5 mr-3" />
-            {t('feedback')}
+            <MessageSquare className="h-5 w-5 shrink-0" />
+            <span className="min-w-0 break-words">{t('feedback')}</span>
           </button>
           <button
             onClick={onContactDevelopers}
-            className="w-full flex items-center p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-left"
           >
-            <Send className="w-5 h-5 mr-3" />
-            {t('contactDevelopers')}
+            <Send className="h-5 w-5 shrink-0" />
+            <span className="min-w-0 break-words">{t('contactDevelopers')}</span>
           </button>
           <button
             onClick={onRateApp}
-            className="w-full flex items-center p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-left"
           >
-            <Star className="w-5 h-5 mr-3" />
-            {t('rateApp')}
+            <Star className="h-5 w-5 shrink-0" />
+            <span className="min-w-0 break-words">{t('rateApp')}</span>
           </button>
         </div>
       </div>

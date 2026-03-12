@@ -56,59 +56,80 @@ const HourlyForecast = React.memo(function HourlyForecast({ data, getWeatherIcon
 
   return (
     <div className="mb-8">
+      {/* ── Title ── */}
       <h2 className={`text-2xl mb-8 text-center flex items-center justify-center ${fontClass || textMain}`}>
         <Clock className="w-7 h-7 mr-3" />
         {t('threeDayHourly')}
       </h2>
 
-      {/* Render each day as its own card with spacing between, similar to Weekly Forecast */}
-      <div className="space-y-4">
+      {/* ── Day sections ── */}
+      <div className="space-y-3 sm:space-y-4">
         {sortedDays.map(([keyStr, dayData], dayIndex) => (
-          <div
+          <motion.div
             key={keyStr}
-            className={`p-6 rounded-xl backdrop-blur-md ${cardClass || cardBg}`}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: dayIndex * 0.08 }}
+            className={`p-3 sm:p-6 rounded-xl backdrop-blur-md ${cardClass || cardBg}`}
           >
-            <h3 className={`text-lg mb-4 ${fontClass || textMain}`}>
+            {/* Day label */}
+            <h3 className={`text-base sm:text-lg mb-3 sm:mb-4 ${fontClass || textMain}`}>
               {formatDayLabel(keyStr)}
             </h3>
-            <div className="overflow-x-auto">
-              <div className="flex space-x-5 pb-2" style={{ minWidth: 'max-content' }}>
+
+            {/* Horizontal scroll row */}
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+              <div className="flex space-x-2 sm:space-x-5 pb-2" style={{ minWidth: 'max-content' }}>
                 {dayData.map((item, index) => {
                   const nowSec = Math.floor(Date.now() / 1000);
-                  const isCurrentHour = dayIndex === 0 && Math.abs(item.dt - nowSec) < 3600; // within current hour bucket
+                  const isCurrentHour = dayIndex === 0 && Math.abs(item.dt - nowSec) < 3600;
+
                   return (
-                    <div
+                    <motion.div
                       key={`${keyStr}-${index}`}
-                      className={`flex-shrink-0 text-center p-5 rounded-xl transition-colors min-w-[110px] ${
-                        isCurrentHour ? 'bg-white/20 ring-2 ring-white/30' : 'bg-white/10'
-                      }`}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2, delay: dayIndex * 0.08 + index * 0.03 }}
+                      className={`
+                        flex-shrink-0 text-center rounded-xl transition-colors
+                        p-3 sm:p-5
+                        min-w-[80px] sm:min-w-[110px]
+                        ${isCurrentHour
+                          ? 'bg-white/20 ring-2 ring-white/30'
+                          : 'bg-white/10 hover:bg-white/15'}
+                      `}
                     >
-                      <p className={`text-sm font-semibold mb-3 ${textMain}`}>
+                      {/* Time / Now */}
+                      <p className={`text-xs sm:text-sm font-semibold mb-2 sm:mb-3 ${textMain}`}>
                         {isCurrentHour ? t('now') : formatTime(item.dt)}
                       </p>
 
-                      <div className={`mb-4 flex justify-center ${textMain}`}>
+                      {/* Weather icon */}
+                      <div className={`mb-2 sm:mb-4 flex justify-center ${textMain}`}>
                         {getWeatherIcon(item.weather[0]?.main)}
                       </div>
 
-                      <p className={`text-lg font-bold mb-3 ${textMain}`}>
+                      {/* Temperature */}
+                      <p className={`text-base sm:text-lg font-bold mb-2 sm:mb-3 ${textMain}`}>
                         {formatTemp(item.temp)}°{temperatureUnit === 'celsius' ? 'C' : 'F'}
                       </p>
 
-                      <div className="flex items-center justify-center text-blue-200 text-sm mb-2">
+                      {/* Rain % */}
+                      <div className="flex items-center justify-center text-blue-200 text-xs sm:text-sm mb-1 sm:mb-2">
                         <Droplets className="w-3 h-3 mr-2" />
                         <span>{Math.round(item.pop * 100)}%</span>
                       </div>
 
-                      <p className={`text-sm ${textSubtle}`}>
+                      {/* Wind */}
+                      <p className={`text-xs sm:text-sm ${textSubtle}`}>
                         {formatWindSpeed(item.wind_speed, windSpeedUnit)} {getWindSpeedUnit(windSpeedUnit)}
                       </p>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

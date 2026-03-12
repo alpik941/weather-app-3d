@@ -151,7 +151,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
 
   const [isHovered, setIsHovered] = useState(false); 
  return (
-    <div className="max-w-lg mx-auto mb-8 relative">
+    <div className="relative mx-auto mb-6 w-full max-w-lg sm:mb-8">
       <motion.form
         onSubmit={handleSubmit}
         className="relative"
@@ -160,9 +160,8 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
       >
         {/* ДОБАВЬТЕ ОБРАБОТЧИКИ HOVER ЗДЕСЬ */}
         <motion.div
-          className={`glass-card-intense rounded-3xl overflow-hidden relative z-10 micro-glow ${cardBg} ${border}`}
+          className={`glass-card-intense relative z-10 w-full overflow-hidden rounded-3xl micro-glow ${cardBg} ${border} ${isExpanded ? 'w-full' : 'w-full sm:w-[280px]'}`}
           animate={{ 
-            width: isExpanded ? '100%' : '280px',
             background: isExpanded ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)',
             // Добавьте анимацию для hover эффекта
             scale: isHovered ? 1.02 : 1,
@@ -178,19 +177,19 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
             <button
               type="button"
               onClick={handleExpand}
-              className={`p-4 ${iconSearchBtn} transition-colors flex-shrink-0`}
+              className={`p-3 sm:p-4 ${iconSearchBtn} transition-colors flex-shrink-0`}
             >
               {/* ДОБАВЬТЕ АНИМАЦИЮ ДЛЯ ИКОНКИ ПРИ HOVER */}
               <motion.div
                 animate={{ rotate: isHovered ? 5 : 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 10 }}
               >
-                <Search className="w-6 h-6" />
+                <Search className="h-5 w-5 sm:h-6 sm:w-6" />
               </motion.div>
             </button>
             
             {!isExpanded && (
-              <div className={`flex-1 text-base ${textSubtle} px-10`}>
+              <div className={`flex-1 truncate px-3 pr-5 text-sm sm:px-10 sm:text-base ${textSubtle}`}>
                 {t('searchHint')}
               </div>
             )}
@@ -209,7 +208,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
                 }
               }}
               placeholder={t('searchPlaceholder')}
-              className={`bg-transparent ${textMain} ${placeholderClass} border-none outline-none flex-1 pr-4 text-lg`}
+              className={`bg-transparent ${textMain} ${placeholderClass} border-none outline-none flex-1 pr-3 text-base sm:pr-4 sm:text-lg`}
               animate={{ 
                 opacity: isExpanded ? 1 : 0,
                 width: isExpanded ? '100%' : 0,
@@ -222,10 +221,10 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
               <button
                 type="button"
                 onClick={onLocationRequest}
-                className={`p-2 ${iconActionBtn} transition-colors flex-shrink-0 mr-2`}
+                className={`mr-1 flex-shrink-0 p-2 ${iconActionBtn} transition-colors sm:mr-2`}
                 title={t('useMyLocation')}
               >
-                <Locate className="w-5 h-5" />
+                <Locate className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             )}
             
@@ -233,9 +232,9 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
               <button
                 type="button"
                 onClick={handleClear}
-                className={`p-2 ${iconActionBtn} transition-colors flex-shrink-0`}
+                className={`flex-shrink-0 p-2 ${iconActionBtn} transition-colors`}
               >
-                <X className="w-5 h-5" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             )}
           </div>
@@ -248,10 +247,10 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`absolute top-full left-0 right-0 mt-3 ${panelBg} backdrop-blur-md rounded-xl overflow-hidden z-20 max-h-80 overflow-y-auto border ${panelBorder}`}
+              className={`absolute top-full left-0 right-0 z-20 mt-3 max-h-80 overflow-y-auto overflow-hidden rounded-xl border backdrop-blur-md ${panelBg} ${panelBorder}`}
             >
               {loading && (
-                <div className={`p-6 text-center ${panelSubtle}`}>
+                <div className={`p-5 text-center sm:p-6 ${panelSubtle}`}>
                   <div className={`animate-spin rounded-full h-6 w-6 border-2 ${spinnerBorder} mx-auto mb-2`}></div>
                   <span className="text-sm">{t('searchingCities')}</span>
                 </div>
@@ -259,8 +258,8 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
 
               {!loading && query.length < 2 && recentSearches.length > 0 && (
                 <div>
-                  <div className={`px-6 py-3 ${panelSubtle} text-sm font-semibold border-b ${panelBorder} flex items-center`}>
-                    <Clock className={`w-4 h-4 mr-3 ${iconMuted}`} />
+                  <div className={`flex items-center border-b px-4 py-3 text-sm font-semibold sm:px-6 ${panelSubtle} ${panelBorder}`}>
+                    <Clock className={`mr-3 h-4 w-4 ${iconMuted}`} />
                     {t('recentSearches')}
                   </div>
                   {recentSearches.map((city, index) => (
@@ -268,10 +267,10 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
                       key={index}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleCitySelect(city)}
-                      className={`w-full px-6 py-4 text-left ${panelText} ${itemHover} transition-colors flex items-center`}
+                      className={`flex w-full items-center px-4 py-3 text-left transition-colors sm:px-6 sm:py-4 ${panelText} ${itemHover}`}
                     >
-                      <Clock className={`w-4 h-4 mr-4 ${iconMuted}`} />
-                      <span className="text-base">{city}</span>
+                      <Clock className={`mr-3 h-4 w-4 sm:mr-4 ${iconMuted}`} />
+                      <span className="text-sm sm:text-base">{city}</span>
                     </button>
                   ))}
                 </div>
@@ -280,7 +279,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
               {!loading && suggestions.length > 0 && (
                 <div>
                   {query.length >= 2 && (
-                    <div className={`px-6 py-3 ${panelSubtle} text-sm font-semibold border-b ${panelBorder}`}>
+                    <div className={`border-b px-4 py-3 text-sm font-semibold sm:px-6 ${panelSubtle} ${panelBorder}`}>
                       {t('citySuggestions')}
                     </div>
                   )}
@@ -289,12 +288,12 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
                       key={index}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleCitySelect(suggestion.name)}
-                      className={`w-full px-6 py-4 text-left ${panelText} ${itemHover} transition-colors flex items-center`}
+                      className={`flex w-full items-center px-4 py-3 text-left transition-colors sm:px-6 sm:py-4 ${panelText} ${itemHover}`}
                     >
-                      <MapPin className={`w-4 h-4 mr-4 ${iconMuted}`} />
+                      <MapPin className={`mr-3 h-4 w-4 sm:mr-4 ${iconMuted}`} />
                       <div>
-                        <div className="text-base font-semibold">{suggestion.name}</div>
-                        <div className={`text-sm ${panelSubtle}`}>
+                        <div className="text-sm font-semibold sm:text-base">{suggestion.name}</div>
+                        <div className={`text-xs sm:text-sm ${panelSubtle}`}>
                           {suggestion.state ? `${suggestion.state}, ` : ''}{suggestion.country}
                         </div>
                       </div>
@@ -304,7 +303,7 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
               )}
 
               {!loading && query.length >= 2 && suggestions.length === 0 && (
-                <div className={`p-6 text-center typography-body ${panelSubtle}`}>
+                <div className={`p-5 text-center typography-body sm:p-6 ${panelSubtle}`}>
                   {t('noCitiesFound')} "{query}"
                 </div>
               )}
@@ -314,10 +313,10 @@ export default function SearchBar({ onSearch, onLocationRequest }) {
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleCitySelect(query)}
-                    className={`w-full px-8 py-6 text-left ${panelSubtle} ${itemHover} transition-colors flex items-center`}
+                    className={`flex w-full items-center px-5 py-4 text-left transition-colors sm:px-8 sm:py-6 ${panelSubtle} ${itemHover}`}
                   >
-                    <Search className={`w-6 h-6 mr-6 ${iconMuted}`} />
-                    <span className="text-base">{t('searchFor')} "{query}"</span>
+                    <Search className={`mr-4 h-5 w-5 sm:mr-6 sm:h-6 sm:w-6 ${iconMuted}`} />
+                    <span className="text-sm sm:text-base">{t('searchFor')} "{query}"</span>
                   </button>
                 </div>
               )}

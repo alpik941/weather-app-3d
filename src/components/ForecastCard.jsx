@@ -32,6 +32,7 @@ const ForecastCard = React.memo(function ForecastCard({ data, icon, cardClass, f
     it: 'it-IT',
     pt: 'pt-PT',
     ru: 'ru-RU',
+    tr: 'tr-TR',
     zh: 'zh-CN',
     ja: 'ja-JP',
     ko: 'ko-KR'

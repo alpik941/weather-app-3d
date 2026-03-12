@@ -76,53 +76,53 @@ const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
   
 
   return (
-    <div className={`${cardBg} backdrop-blur-md p-6 rounded-xl max-w-md mx-auto`}>
+    <div className={`${cardBg} mx-auto w-full max-w-md rounded-xl p-4 backdrop-blur-md sm:p-6`}>
       <div className="text-center">
         {/* Местоположение */}
-        <div className="flex items-center justify-center mb-3">
-          <MapPin className={`w-6 h-6 mr-3 ${textAccent}`} />
-          <p className={`text-lg ${textAccent}`}>{data.name}, {data.sys.country}</p>
+        <div className="mb-3 flex items-center justify-center gap-2 sm:gap-3">
+          <MapPin className={`h-5 w-5 sm:h-6 sm:w-6 ${textAccent}`} />
+          <p className={`max-w-[220px] truncate text-base sm:max-w-none sm:text-lg ${textAccent}`}>{data.name}, {data.sys.country}</p>
         </div>
 
         {/* Current Local Time (time only) */}
-        <div className="mb-4">
-          <span className={`${textMain} font-semibold`}>
+        <div className="mb-3 sm:mb-4">
+          <span className={`text-sm font-semibold sm:text-base ${textMain}`}>
             {formatTime(now, true)}
           </span>
         </div>
 
         {/* Температура */}
-        <div className="mb-6">
-          <div className={`text-8xl mb-3 ${textMain}`}>{formatTemp(data.main.temp)}</div>
-          <p className={`text-lg capitalize ${textAccent}`}>
+        <div className="mb-5 sm:mb-6">
+          <div className={`mb-2 text-6xl sm:mb-3 sm:text-8xl ${textMain}`}>{formatTemp(data.main.temp)}</div>
+          <p className={`text-base capitalize sm:text-lg ${textAccent}`}>
             {translateWeatherDescription(data.weather[0]?.description)}
           </p>
         </div>
 
         {/* Погодная иконка */}
-        <div className={`${textMain} mb-3`}>{icon}</div>
+        <div className={`mb-3 flex justify-center sm:mb-4 ${textMain}`}>{icon}</div>
 
         {/* Диапазон температур */}
-        <div className="flex justify-between items-center mb-8">
-          <div className={`text-center ${cardBg} backdrop-blur-md p-4 rounded-lg flex-1 mr-2`}>
-            <p className={`text-sm mb-1 ${textSubtle}`}>{t('high')}</p>
-            <p className={`text-xl font ${textMain}`}>{formatTemp(data.main.temp_max)}</p>
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:mb-8">
+          <div className={`flex-1 rounded-lg p-3 text-center backdrop-blur-md sm:p-4 ${cardBg}`}>
+            <p className={`mb-1 text-xs sm:text-sm ${textSubtle}`}>{t('high')}</p>
+            <p className={`text-lg sm:text-xl ${textMain}`}>{formatTemp(data.main.temp_max)}</p>
           </div>
-          <div className={`text-center ${cardBg} backdrop-blur-md p-4 rounded-lg flex-1 ml-2`}>
-            <p className={`text-sm mb-1 ${textSubtle}`}>{t('low')}</p>
-            <p className={`text-xl font ${textMain}`}>{formatTemp(data.main.temp_min)}</p>
+          <div className={`flex-1 rounded-lg p-3 text-center backdrop-blur-md sm:p-4 ${cardBg}`}>
+            <p className={`mb-1 text-xs sm:text-sm ${textSubtle}`}>{t('low')}</p>
+            <p className={`text-lg sm:text-xl ${textMain}`}>{formatTemp(data.main.temp_min)}</p>
           </div>
         </div>
 
         {/* Wind Speed & Direction */}
         {showWindBlock && data.wind?.speed != null && (
-          <div className={`mb-8 ${cardBg} backdrop-blur-md p-4 rounded-lg`}>
-            <div className="flex items-center justify-between">
+          <div className={`mb-6 rounded-lg p-4 backdrop-blur-md sm:mb-8 ${cardBg}`}>
+            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
               <div>
-                <p className={`text-sm mb-1 ${textSubtle}`}>{t('windSpeed')}</p>
-                <p className={`text-2xl font-semibold ${textMain}`}>{formatWind(data.wind.speed)}</p>
+                <p className={`mb-1 text-xs sm:text-sm ${textSubtle}`}>{t('windSpeed')}</p>
+                <p className={`text-xl font-semibold sm:text-2xl ${textMain}`}>{formatWind(data.wind.speed)}</p>
                 {typeof data.wind.deg === 'number' && (
-                  <p className={`mt-1 text-sm ${textSubtle}`}>
+                  <p className={`mt-1 text-xs sm:text-sm ${textSubtle}`}>
                     {degToCardinal(data.wind.deg)} · {Math.round(data.wind.deg)}°
                   </p>
                 )}
@@ -130,7 +130,7 @@ const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
               {typeof data.wind.deg === 'number' && (
                 <div className="flex items-center">
                   {/* Compass */}
-                  <div className={`relative w-24 h-24 rounded-full border border-white/30 ${textSubtle} flex items-center justify-center select-none`}>
+                  <div className={`relative flex h-20 w-20 select-none items-center justify-center rounded-full border border-white/30 sm:h-24 sm:w-24 ${textSubtle}`}>
                     {/* Cardinal labels */}
                     <span className="absolute top-1 text-xs">N</span>
                     <span className="absolute right-1 text-xs">E</span>
@@ -138,7 +138,7 @@ const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
                     <span className="absolute left-1 text-xs">W</span>
                     {/* Pointer (shows where wind comes FROM) */}
                     <Navigation
-                      className={`w-7 h-7 ${textMain}`}
+                      className={`h-6 w-6 sm:h-7 sm:w-7 ${textMain}`}
                       style={{ transform: `rotate(${data.wind.deg}deg)` }}
                     />
                   </div>
@@ -150,10 +150,10 @@ const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
         
 
         {/* Продолжительность дня + крайние точки (объединённый контейнер) */}
-        <div className="mt-8 pt-6 border-t border-white/30">
-          <div className={`relative ${cardBg} backdrop-blur-md p-4 rounded-lg`}>
+        <div className="mt-6 border-t border-white/30 pt-5 sm:mt-8 sm:pt-6">
+          <div className={`relative rounded-lg p-4 backdrop-blur-md ${cardBg}`}>
             {/* Контейнер дуги */}
-            <div className="relative h-20 mx-4" ref={containerRef}>
+            <div className="relative mx-1 h-16 sm:mx-4 sm:h-20" ref={containerRef}>
               {/* Траектория дуги */}
               <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 80">
                 <path
@@ -197,8 +197,8 @@ const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
                 }}
               >
                 <div className="relative">
-                  <Sun className="w-8 h-8 text-yellow-300" />
-                  <div className="absolute inset-0 w-8 h-8 bg-yellow-300 rounded-full opacity-40 blur-md" />
+                  <Sun className="h-6 w-6 text-yellow-300 sm:h-8 sm:w-8" />
+                  <div className="absolute inset-0 h-6 w-6 rounded-full bg-yellow-300 opacity-40 blur-md sm:h-8 sm:w-8" />
                 </div>
               </div>
             </div>
@@ -206,18 +206,18 @@ const WeatherCard = React.memo(function WeatherCard({ data, icon }) {
             <div className="mt-3">
               <div className="grid grid-cols-3 gap-2 items-start">
                 <div className="text-left">
-                  <div className={`text-xs mb-0.5 ${textSubtle}`}>{t('sunrise')}</div>
-                  <div className={`${textAccent} text-sm`}>{formatTime(data.sys.sunrise)}</div>
+                  <div className={`mb-0.5 text-[11px] sm:text-xs ${textSubtle}`}>{t('sunrise')}</div>
+                  <div className={`text-xs sm:text-sm ${textAccent}`}>{formatTime(data.sys.sunrise)}</div>
                 </div>
                 <div className="text-center">
-                  <div className={`text-xs mb-0.5 ${textSubtle}`}>{t('dayLength')}</div>
-                  <div className={`text-base ${textAccent}`}>
+                  <div className={`mb-0.5 text-[11px] sm:text-xs ${textSubtle}`}>{t('dayLength')}</div>
+                  <div className={`text-sm sm:text-base ${textAccent}`}>
                     {Math.floor((data.sys.sunset - data.sys.sunrise) / 3600)}h {Math.floor(((data.sys.sunset - data.sys.sunrise) % 3600) / 60)}m
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-xs mb-0.5 ${textSubtle}`}>{t('sunset')}</div>
-                  <div className={`${textAccent} text-sm`}>{formatTime(data.sys.sunset)}</div>
+                  <div className={`mb-0.5 text-[11px] sm:text-xs ${textSubtle}`}>{t('sunset')}</div>
+                  <div className={`text-xs sm:text-sm ${textAccent}`}>{formatTime(data.sys.sunset)}</div>
                 </div>
               </div>
             </div>

@@ -51,39 +51,39 @@ export default function TodaySection({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-8"
+          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-7"
         >
-          <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+          <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
             <Wind className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-            <p className={`typography-caption mb-2 ${cardCaption}`}>{t('windSpeed')}</p>
-            <p className={`typography-title ${cardTitle}`}>
+            <p className={`typography-caption mb-2 break-words ${cardCaption}`}>{t('windSpeed')}</p>
+            <p className={`typography-title break-words ${cardTitle}`}>
               {formatWindSpeed(weatherData.wind?.speed ?? 0, windSpeedUnit)} {getWindSpeedUnit(windSpeedUnit)}
             </p>
           </div>
-          <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+          <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
             <Droplets className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-            <p className={`typography-caption mb-2 ${cardCaption}`}>{t('humidity')}</p>
-            <p className={`typography-title ${cardTitle}`}>{weatherData.main?.humidity}%</p>
+            <p className={`typography-caption mb-2 break-words ${cardCaption}`}>{t('humidity')}</p>
+            <p className={`typography-title break-words ${cardTitle}`}>{weatherData.main?.humidity}%</p>
           </div>
-          <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+          <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
             <Eye className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-            <p className={`typography-caption mb-2 ${cardCaption}`}>{t('visibility')}</p>
-            <p className={`typography-title ${cardTitle}`}>{(weatherData.visibility / 1000).toFixed(1)} km</p>
+            <p className={`typography-caption mb-2 break-words ${cardCaption}`}>{t('visibility')}</p>
+            <p className={`typography-title break-words ${cardTitle}`}>{(weatherData.visibility / 1000).toFixed(1)} km</p>
           </div>
-          <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+          <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
             <Thermometer className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-            <p className={`typography-caption mb-2 ${cardCaption}`}>{t('feelsLike')}</p>
-            <p className={`typography-title ${cardTitle}`}>{formatTemp(weatherData.main?.feels_like)}°{temperatureUnit === 'celsius' ? 'C' : 'F'}</p>
+            <p className={`typography-caption mb-2 break-words ${cardCaption}`}>{t('feelsLike')}</p>
+            <p className={`typography-title break-words ${cardTitle}`}>{formatTemp(weatherData.main?.feels_like)}°{temperatureUnit === 'celsius' ? 'C' : 'F'}</p>
           </div>
-          <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+          <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
             <Gauge className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-            <p className={`typography-caption mb-2 ${cardCaption}`}>{t('pressure')}</p>
-            <p className={`typography-title ${cardTitle}`}>{weatherData.main?.pressure} hPa</p>
+            <p className={`typography-caption mb-2 break-words ${cardCaption}`}>{t('pressure')}</p>
+            <p className={`typography-title break-words ${cardTitle}`}>{weatherData.main?.pressure} hPa</p>
           </div>
           {airQuality && (
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+            <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
               <Activity className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-title ${cardTitle}`}>
+              <p className={`typography-title break-words ${cardTitle}`}>
                 {(() => {
                   const cat = airQuality?.index?.category;
                   const labelMap = {
@@ -114,10 +114,10 @@ export default function TodaySection({
             </div>
           )}
           {typeof weatherData?.uv === 'number' && (
-            <div className={`card-secondary text-center micro-bounce interactive-glow p-6 rounded-2xl ${cardSecondary}`}>
+            <div className={`card-secondary text-center micro-bounce interactive-glow rounded-2xl p-5 sm:p-6 ${cardSecondary}`}>
               <SunIcon className={`w-10 h-10 mx-auto mb-3 weather-icon micro-rotate ${cardHeader}`} />
-              <p className={`typography-caption mb-2 ${cardCaption}`}>{t('uvIndex')}</p>
-              <p className={`typography-title ${cardTitle}`}>
+              <p className={`typography-caption mb-2 break-words ${cardCaption}`}>{t('uvIndex')}</p>
+              <p className={`typography-title break-words ${cardTitle}`}>
                 {(() => {
                   const v = weatherData.uv;
                   let catKey = 'uvLow';

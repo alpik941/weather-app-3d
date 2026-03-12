@@ -17,7 +17,7 @@ export default function OnboardingOverlay() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-[520px] max-w-[92vw] bg-white dark:bg-gray-800 rounded-xl p-6 shadow-2xl">
+      <div className="w-[520px] max-w-[92vw] rounded-xl bg-white p-5 shadow-2xl dark:bg-gray-800 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('welcome') || 'Welcome'}</h3>
           <button
@@ -30,7 +30,7 @@ export default function OnboardingOverlay() {
         <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
           <div>
             <div className="font-medium mb-1">{t('timeFormat') || 'Time Format'}</div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button onClick={() => setHour12(true)} className={`px-3 py-2 rounded ${hour12===true?'bg-blue-600 text-white':'bg-gray-100 dark:bg-gray-700'}`}>12h</button>
               <button onClick={() => setHour12(false)} className={`px-3 py-2 rounded ${hour12===false?'bg-blue-600 text-white':'bg-gray-100 dark:bg-gray-700'}`}>24h</button>
               <button onClick={() => setHour12(undefined)} className={`px-3 py-2 rounded ${hour12===undefined?'bg-blue-600 text-white':'bg-gray-100 dark:bg-gray-700'}`}>{t('auto')||'Auto'}</button>

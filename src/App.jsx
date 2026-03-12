@@ -49,11 +49,31 @@ function App() {
   const [showMap, setShowMap] = useState(false);
   const [currentView, setCurrentView] = useState('today');
   const [error, setError] = useState(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [offlineUsed, setOfflineUsed] = useState(false);
   const [offlineTs, setOfflineTs] = useState(null);
   const [showTimeDiag] = useState(() => {
     try { return localStorage.getItem('weather-time-diag') === '1'; } catch { return false; }
   });
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingProgress(100);
+      return;
+    }
+
+    setLoadingProgress(0);
+    const id = setInterval(() => {
+      setLoadingProgress((current) => {
+        if (current >= 99) return 99;
+        if (current < 70) return Math.min(current + 8, 99);
+        if (current < 90) return Math.min(current + 3, 99);
+        return Math.min(current + 1, 99);
+      });
+    }, 120);
+
+    return () => clearInterval(id);
+  }, [loading]);
 
   const fetchWeatherData = React.useCallback(async (cityName) => {
     setLoading(true);
@@ -498,7 +518,12 @@ function App() {
             WebkitBackdropFilter: 'blur(15px)',
           }}
         >
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/70 border-t-white mx-auto"></div>
+          <div className="relative mx-auto h-16 w-16">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-white/70 border-t-white"></div>
+            <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-white">
+              {loadingProgress}%
+            </div>
+          </div>
           <p className="text-white text-center mt-4 font-medium">{t('loading') || 'Loading weather data...'}</p>
         </motion.div>
       </div>
@@ -575,7 +600,7 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-6xl">
+      <div className="relative z-10 container mx-auto max-w-6xl px-4 py-6 sm:py-8">
         {/* Onboarding overlay (one-time) */}
         <OnboardingOverlay />
         {/* Offline snapshot banner */}
@@ -600,44 +625,44 @@ function App() {
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center mb-8"
+          className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div className="text-center flex-1">
-            <h1 className={`typography-hero mb-4 drop-shadow-2xl micro-pulse ${cardHeader}`}>
+          <div className="flex-1 text-center sm:text-left">
+            <h1 className={`typography-hero mb-3 drop-shadow-2xl micro-pulse sm:mb-4 ${cardHeader}`}>
               {t('appTitle')}
             </h1>
             <p className={`typography-subtitle ${cardSubtitle} shimmer-effect`}>{t('subtitle') || 'Advanced 3D Weather Experience'}</p>
           </div>
           
-          <div className="flex space-x-3">
+          <div className="grid w-full max-w-xs grid-cols-3 gap-3 self-center sm:flex sm:w-auto sm:max-w-none sm:space-x-3 sm:gap-0">
             <button
               onClick={handleFindMe}
               disabled={loading}
-              className={`neuro-button p-4 micro-bounce interactive-glow ${theme === 'dark' ? 'bg-white/20 border-white/30 text-white' : 'bg-white/90 border-gray-200 text-gray-900'} hover:bg-white/70 transition-all duration-300`}
+              className={`neuro-button flex items-center justify-center p-3 micro-bounce interactive-glow sm:p-4 ${theme === 'dark' ? 'bg-white/20 border-white/30 text-white' : 'bg-white/90 border-gray-200 text-gray-900'} hover:bg-white/70 transition-all duration-300`}
               title={t('findLocation') || 'Find My Location'}
               aria-label={t('findLocation') || 'Find My Location'}
             >
-              <Locate className={`w-6 h-6 weather-icon ${cardHeader}`} />
+              <Locate className={`h-5 w-5 weather-icon sm:h-6 sm:w-6 ${cardHeader}`} />
             </button>
             
             {weatherData && (
               <button
                 onClick={() => setShowMap(true)}
-                className={`neuro-button p-4 micro-bounce interactive-glow ${theme === 'dark' ? 'bg-white/20 border-white/30 text-white' : 'bg-white/90 border-gray-200 text-gray-900'} hover:bg-white/70 transition-all duration-300`}
+                className={`neuro-button flex items-center justify-center p-3 micro-bounce interactive-glow sm:p-4 ${theme === 'dark' ? 'bg-white/20 border-white/30 text-white' : 'bg-white/90 border-gray-200 text-gray-900'} hover:bg-white/70 transition-all duration-300`}
                 title={t('showOnMap') || 'Show on Map'}
                 aria-label={t('showOnMap') || 'Show on Map'}
               >
-                <MapIcon className={`w-6 h-6 weather-icon ${cardHeader}`} />
+                <MapIcon className={`h-5 w-5 weather-icon sm:h-6 sm:w-6 ${cardHeader}`} />
               </button>
             )}
             
             <button
               onClick={() => setShowSettings(true)}
-              className={`neuro-button p-4 micro-bounce interactive-glow ${cardBase} hover:bg-white/70 transition-all duration-300`}
+              className={`neuro-button flex items-center justify-center p-3 micro-bounce interactive-glow sm:p-4 ${cardBase} hover:bg-white/70 transition-all duration-300`}
               title={t('settings') || 'Settings'}
               aria-label={t('settings') || 'Settings'}
             >
-              <Settings className={`w-6 h-6 weather-icon ${cardHeader}`} />
+              <Settings className={`h-5 w-5 weather-icon sm:h-6 sm:w-6 ${cardHeader}`} />
             </button>
           </div>
         </motion.header>

@@ -15,6 +15,7 @@ const languages = [
   { code: 'it', name: 'Italiano', flag: '🇮🇹' },
   { code: 'pt', name: 'Português', flag: '🇵🇹' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
   { code: 'zh', name: '中文', flag: '🇨🇳' },
   { code: 'ja', name: '日本語', flag: '🇯🇵' },
   { code: 'ko', name: '한국어', flag: '🇰🇷' }
@@ -150,7 +151,7 @@ export default function SettingsPanel({ isOpen, onClose, onCitySelect }) {
           </div>
 
           <div className="mb-6">
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
               {[
                 { key: 'saved', label: t('savedCities') },
                 { key: 'units', label: t('units') || 'Units' },
@@ -159,13 +160,13 @@ export default function SettingsPanel({ isOpen, onClose, onCitySelect }) {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`min-w-0 rounded-lg px-3 py-2 text-sm text-left transition-colors sm:text-center ${
                     activeTab === tab.key
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {tab.label}
+                  <span className="block whitespace-normal break-words">{tab.label}</span>
                 </button>
               ))}
             </div>

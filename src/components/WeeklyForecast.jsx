@@ -30,6 +30,7 @@ const WeeklyForecast = React.memo(function WeeklyForecast({ data, getWeatherIcon
     it: 'it-IT',
     pt: 'pt-PT',
     ru: 'ru-RU',
+    tr: 'tr-TR',
     zh: 'zh-CN',
     ja: 'ja-JP',
     ko: 'ko-KR',
@@ -80,52 +81,49 @@ const WeeklyForecast = React.memo(function WeeklyForecast({ data, getWeatherIcon
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
-              className={`p-5 bg-white/10 backdrop-blur-md rounded-lg hover:bg-white/15 transition-colors ${cardBg} flex flex-col sm:flex-row sm:items-center sm:justify-between`}
+              className={`rounded-lg bg-white/10 backdrop-blur-md p-3 transition-colors hover:bg-white/15 sm:flex sm:items-center sm:justify-between sm:p-5 ${cardBg}`}
             >
-              {/* Мобильная строка 1: иконка + дата + температура */}
-              <div className="flex items-center justify-between sm:hidden">
-                <div className="flex items-center">
-                  <div className={`text-white mr-4 ${textMain}`}>
+              <div className="flex items-start justify-between gap-3 sm:hidden">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className={`shrink-0 text-white ${textMain}`}>
                     {getWeatherIcon(item.weather[0]?.main)}
                   </div>
-                  <div className="text-left">
-                    <p className={`text-sm ${textSubtle}`}>
+                  <div className="min-w-0 text-left">
+                    <p className={`text-xs sm:text-sm ${textSubtle}`}>
                       {fullDateLabel(item.dt)}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="shrink-0 text-right">
                   <div className="flex items-center space-x-2">
-                    <span className={`text-lg font-bold ${textMain}`}>
+                    <span className={`text-base font-bold sm:text-lg ${textMain}`}>
                       {formatTemp(item.temp.max)}°
                     </span>
-                    <span className={`text-base ${textSubtle}`}>
+                    <span className={`text-sm sm:text-base ${textSubtle}`}>
                       {formatTemp(item.temp.min)}°
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Мобильная строка 2: описание + осадки + ветер */}
-              <div className="flex items-center justify-between mt-3 sm:hidden">
-                <div className="flex-1 text-center">
-                  <p className={`text-base capitalize ${textMain}`}>
+              <div className="mt-3 flex items-center justify-between gap-3 sm:hidden">
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate text-sm capitalize ${textMain}`}>
                     {translateWeatherDescription(item.weather[0]?.description)}
                   </p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center text-blue-200 text-sm">
-                    <Droplets className="w-4 h-4 mr-2" />
+                <div className="flex shrink-0 items-center space-x-3">
+                  <div className="flex items-center text-xs text-blue-200">
+                    <Droplets className="mr-1 h-3 w-3" />
                     <span>{Math.round(item.pop * 100)}%</span>
                   </div>
-                  <div className="flex items-center text-white/70 text-sm">
-                    <Wind className="w-4 h-4 mr-2" />
+                  <div className="flex items-center text-xs text-white/70">
+                    <Wind className="mr-1 h-3 w-3" />
                     <span>{formatWindSpeed(item.wind_speed, windSpeedUnit)} {getWindSpeedUnit(windSpeedUnit)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Десктопная версия: однострочная */}
               <div className="hidden sm:flex sm:items-center sm:flex-1">
                 <div className="text-left min-w-[180px]">
                   <p className={`text-sm ${textSubtle}`}>

@@ -132,7 +132,7 @@ export default function WeatherAlerts({
   if (!displayAlerts || displayAlerts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-30 space-y-2 max-w-sm">
+    <div className="fixed left-4 right-4 top-4 z-30 space-y-2 sm:left-auto sm:right-4 sm:max-w-sm">
       <AnimatePresence>
         {displayAlerts.map((alert, index) => {
           const severity = alert.severity || 'yellow';
@@ -144,7 +144,7 @@ export default function WeatherAlerts({
               initial={{ opacity: 0, x: 300, scale: 0.8 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 300, scale: 0.8 }}
-              className={`${styles.bg} ${styles.border} backdrop-blur-xl p-5 rounded-lg relative cursor-pointer transition-shadow hover:shadow-lg`}
+              className={`${styles.bg} ${styles.border} relative cursor-pointer rounded-lg p-4 backdrop-blur-xl transition-shadow hover:shadow-lg sm:p-5`}
               onClick={() => handleAlertClick(index)}
             >
               {/* Кнопка закрытия в правом верхнем углу */}
@@ -161,18 +161,18 @@ export default function WeatherAlerts({
               </button>
 
               <div className="flex items-start">
-                <div className="flex items-start flex-1 pr-8">
-                  <AlertTriangle className={`w-6 h-6 ${styles.icon} mr-4 mt-0.5 flex-shrink-0`} />
-                  <div className="flex-1">
-                    <h4 className={`text-base font-bold ${styles.title}`}>
+                <div className="flex flex-1 items-start pr-8">
+                  <AlertTriangle className={`mr-3 mt-0.5 h-5 w-5 shrink-0 sm:mr-4 sm:h-6 sm:w-6 ${styles.icon}`} />
+                  <div className="min-w-0 flex-1">
+                    <h4 className={`break-words text-sm font-bold sm:text-base ${styles.title}`}>
                       {alert.event}
                     </h4>
-                    <p className={`text-sm ${styles.text} mt-2 line-clamp-2`}>
+                    <p className={`mt-2 break-words text-sm ${styles.text}`}>
                       {alert.description}
                     </p>
-                    <div className={`flex items-center mt-3 text-sm ${styles.time}`}>
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span>
+                    <div className={`mt-3 flex items-start text-xs sm:text-sm ${styles.time}`}>
+                      <Clock className="mr-2 mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="break-words">
                         {t('until')} {formatAlertTime(alert.end, { formatTime, formatDate, dayKey })}
                       </span>
                     </div>
@@ -182,7 +182,7 @@ export default function WeatherAlerts({
 
               {/* Optional: Queue info */}
               {showQueueInfo && displayAlerts.length > 1 && (
-                <div className={`mt-3 pt-3 border-t border-black/10 text-xs font-medium ${styles.time}`}>
+                <div className={`mt-3 border-t border-black/10 pt-3 text-xs font-medium break-words ${styles.time}`}>
                   {index + 1} of {displayAlerts.length} alerts
                 </div>
               )}

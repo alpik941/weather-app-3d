@@ -89,7 +89,7 @@ const WarningModal = ({ warning, onClose, queueLength = 1, autoCloseDelay = null
       }}
     >
       <div
-        className={`relative w-full max-w-md mx-4 rounded-lg p-5 ${styles.container}`}
+        className={`relative mx-4 w-full max-w-md rounded-lg p-4 sm:p-5 ${styles.container}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Кнопка закрытия в правом верхнем углу */}
@@ -107,19 +107,19 @@ const WarningModal = ({ warning, onClose, queueLength = 1, autoCloseDelay = null
         </button>
 
         {/* Левая полоса цвета и иконка */}
-        <div className="flex items-start gap-4">
-          <AlertTriangle className={`w-6 h-6 flex-shrink-0 mt-1 ${styles.icon}`} />
+        <div className="flex items-start gap-3 sm:gap-4">
+          <AlertTriangle className={`mt-1 h-5 w-5 shrink-0 sm:h-6 sm:w-6 ${styles.icon}`} />
 
           <div className="flex-1 min-w-0 pr-8">
             {/* Заголовок события */}
-            <h3 className={`font-bold text-lg ${styles.title}`}>{warning.event}</h3>
+            <h3 className={`break-words pr-1 text-base font-bold sm:text-lg ${styles.title}`}>{warning.event}</h3>
 
             {/* Описание */}
-            <p className={`text-sm mt-2 line-clamp-2 ${styles.description}`}>{warning.description}</p>
+            <p className={`mt-2 break-words text-sm ${styles.description}`}>{warning.description}</p>
 
             {/* Время окончания */}
             {warning.end && (
-              <p className={`text-xs mt-3 font-medium ${styles.description}`}>
+              <p className={`mt-3 break-words text-xs font-medium ${styles.description}`}>
                 🕐 {getEndTimeDisplay(warning.end)}
               </p>
             )}
@@ -144,8 +144,8 @@ const WarningModal = ({ warning, onClose, queueLength = 1, autoCloseDelay = null
 
         {/* Кнопка навигации в очереди (если есть ещё предупреждения) */}
         {queueLength > 1 && (
-          <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between">
-            <span className={`text-xs font-medium ${styles.description}`}>
+          <div className="mt-4 flex flex-col gap-3 border-t border-black/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <span className={`text-xs font-medium break-words ${styles.description}`}>
               {queueLength} alerts
             </span>
             <button
@@ -154,7 +154,7 @@ const WarningModal = ({ warning, onClose, queueLength = 1, autoCloseDelay = null
                 e.stopPropagation();
                 onClose();
               }}
-              className={`flex items-center gap-1 px-3 py-2 rounded text-sm font-medium transition-colors ${styles.button}`}
+              className={`inline-flex w-full items-center justify-center gap-1 rounded px-3 py-2 text-sm font-medium transition-colors sm:w-auto ${styles.button}`}
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
