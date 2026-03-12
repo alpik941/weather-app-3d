@@ -75,11 +75,58 @@ const WeeklyForecast = React.memo(function WeeklyForecast({ data, getWeatherIcon
       <div className="bg-white/10 backdrop-blur-md p-8 rounded-xl">
         <div className="space-y-4">
           {data.map((item, index) => (
-            <div
+            <motion.div
               key={index}
-              className={`flex items-center justify-between p-5 bg-white/10 backdrop-blur-md rounded-lg hover:bg-white/15 transition-colors ${cardBg}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className={`p-5 bg-white/10 backdrop-blur-md rounded-lg hover:bg-white/15 transition-colors ${cardBg} flex flex-col sm:flex-row sm:items-center sm:justify-between`}
             >
-              <div className="flex items-center flex-1">
+              {/* Мобильная строка 1: иконка + дата + температура */}
+              <div className="flex items-center justify-between sm:hidden">
+                <div className="flex items-center">
+                  <div className={`text-white mr-4 ${textMain}`}>
+                    {getWeatherIcon(item.weather[0]?.main)}
+                  </div>
+                  <div className="text-left">
+                    <p className={`text-sm ${textSubtle}`}>
+                      {fullDateLabel(item.dt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-lg font-bold ${textMain}`}>
+                      {formatTemp(item.temp.max)}°
+                    </span>
+                    <span className={`text-base ${textSubtle}`}>
+                      {formatTemp(item.temp.min)}°
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Мобильная строка 2: описание + осадки + ветер */}
+              <div className="flex items-center justify-between mt-3 sm:hidden">
+                <div className="flex-1 text-center">
+                  <p className={`text-base capitalize ${textMain}`}>
+                    {translateWeatherDescription(item.weather[0]?.description)}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center text-blue-200 text-sm">
+                    <Droplets className="w-4 h-4 mr-2" />
+                    <span>{Math.round(item.pop * 100)}%</span>
+                  </div>
+                  <div className="flex items-center text-white/70 text-sm">
+                    <Wind className="w-4 h-4 mr-2" />
+                    <span>{formatWindSpeed(item.wind_speed, windSpeedUnit)} {getWindSpeedUnit(windSpeedUnit)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Десктопная версия: однострочная */}
+              <div className="hidden sm:flex sm:items-center sm:flex-1">
                 <div className="text-left min-w-[180px]">
                   <p className={`text-sm ${textSubtle}`}>
                     {fullDateLabel(item.dt)}
@@ -97,7 +144,7 @@ const WeeklyForecast = React.memo(function WeeklyForecast({ data, getWeatherIcon
                 </div>
               </div>
               
-              <div className="flex items-center space-x-6">
+              <div className="hidden sm:flex sm:items-center sm:space-x-6">
                 <div className="flex items-center text-blue-200 text-sm">
                   <Droplets className="w-4 h-4 mr-2" />
                   <span>{Math.round(item.pop * 100)}%</span>
@@ -119,7 +166,7 @@ const WeeklyForecast = React.memo(function WeeklyForecast({ data, getWeatherIcon
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
